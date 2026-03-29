@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>IVU Fahreranzeige</title>
+<title>FPH Fahreranzeige</title>
 
 <meta name="viewport"
 content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
@@ -13,114 +13,116 @@ content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1
 
 <style>
 :root{
-  --bg:#0D1117;
-  --panel:#161B22;
-  --line:#30363D;
+  --bg:#0b0b0b;
+  --paper:#f5f5f5;
+  --ink:#000;
   --blue:#1F6FEB;
-  --blue2:#58A6FF;
-  --green:#00FF88;
-  --orange:#FFB347;
-  --red:#FF4444;
 }
 
+/* ===== GLOBAL ===== */
 html,body{
-  margin:0;height:100%;width:100%;
-  background:var(--bg);color:#fff;
-  font-family:Segoe UI,Arial,sans-serif;
-  overflow:hidden;touch-action:none;
+  margin:0;
+  height:100%;
+  background:var(--bg);
+  font-family: "Courier New", monospace;
+  overflow:hidden;
 }
 
-/* HEADER */
+/* ===== HEADER ===== */
 .header{
-  height:70px;
+  height:56px;
   display:flex;
   justify-content:space-between;
   align-items:center;
   padding:0 16px;
-  background:#161B22;
+  background:#111;
+  color:#fff;
   border-bottom:2px solid var(--blue);
 }
-#delay{font-size:1.6rem;font-weight:900}
-#headway{font-size:1rem;font-weight:900;color:#ccc}
+#delay{font-size:1.4rem;font-weight:900}
 
-/* LAYOUT */
+/* ===== LAYOUT ===== */
 .main{
   display:grid;
-  grid-template-columns:42% 6px 1fr;
-  height:calc(100% - 70px);
+  grid-template-columns:40% 1fr;
+  height:calc(100% - 56px);
 }
 
-/* STOPS */
-.stops{
-  padding:12px;
-  overflow-y:auto;
-  height:100%;
+/* ===== FPH PAPIER ===== */
+.paper{
+  background:var(--paper);
+  color:var(--ink);
+  overflow:hidden;
+  position:relative;
 }
-.stop{
-  display:grid;
-  grid-template-columns:1fr auto auto;
-  gap:10px;
-  padding:10px;
-  border-bottom:1px solid var(--line);
-  font-weight:800;
+.paper-inner{
+  position:absolute;
+  bottom:0;
+  width:100%;
+  transition:transform 0.6s ease;
 }
-.stop.active{background:rgba(31,111,235,.25)}
-.stop.done{opacity:.4}
+.line{
+  padding:10px 14px;
+  border-bottom:1px dashed #bbb;
+  font-size:1.05rem;
+}
+.line.past{opacity:.4}
+.line.current{
+  font-weight:900;
+  font-size:1.25rem;
+}
 
-/* DIVIDER */
-.divider{background:#222}
-
-/* RIGHT */
-.right{
+/* ===== MAP ===== */
+.mapWrap{
   display:grid;
   grid-template-rows:50% auto auto;
 }
 #map{width:100%;height:100%}
 
-/* BUTTONS */
+/* ===== BUTTONS ===== */
 .controls{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:12px;
   padding:12px;
-  background:var(--panel);
-  border-top:1px solid var(--line);
+  background:#161B22;
 }
 .btn{
   padding:18px;
   font-weight:900;
-  font-size:1.1rem;
+  font-size:1.05rem;
   border:none;
-  border-radius:18px;
+  border-radius:16px;
   background:var(--blue);
   color:#000;
 }
 .btn.ghost{background:#222;color:#fff}
 
-/* ARROW MARKER – KEIN UMRISS */
-.arrowMarker{
-  width:40px;height:40px;
+/* ===== PFEIL ===== */
+.arrow{
+  width:42px;height:42px;
   transform-origin:50% 50%;
 }
-.arrowMarker svg{width:40px;height:40px}
+.arrow svg{width:42px;height:42px}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <div>IVU Fahreranzeige</div>
-  <div>
-    <div id="delay">+00:00</div>
-    <div id="headway">HW --:-- / --:--</div>
-  </div>
+  <div>FPH‑DRUCKER</div>
+  <div id="delay">+00:00</div>
 </div>
 
 <div class="main">
-  <div class="stops" id="stopList"></div>
-  <div class="divider"></div>
 
-  <div class="right">
+  <!-- FPH Papier -->
+  <div class="paper">
+    <div class="paper-inner" id="paper"></div>
+  </div>
+
+  <!-- Karte -->
+  <div class="mapWrap">
     <div id="map"></div>
 
     <div class="controls">
@@ -130,7 +132,7 @@ html,body{
     </div>
 
     <div class="controls">
-      <button class="btn ghost" onclick="centerOnTrack()">🧭 Track</button>
+      <button class="btn ghost" onclick="centerTrack()">🧭 Track</button>
       <button class="btn ghost" onclick="toggleTrack()">🧵 Route</button>
       <button class="btn ghost">🔧</button>
     </div>
@@ -138,21 +140,63 @@ html,body{
 </div>
 
 <script>
-/* ================= DATEN ================= */
+/* ===== HALTESTELLEN (Demo) ===== */
 const stops=[
-  {name:"Depot",lat:52.5208,lon:13.4095,time:"08:00"},
-  {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:05"},
-  {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:10"},
-  {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:15"}
+  {name:"DEPOT",lat:52.5208,lon:13.4095,time:"08:00"},
+  {name:"MARKTPLATZ",lat:52.5215,lon:13.4112,time:"08:05"},
+  {name:"RATHAUS",lat:52.5221,lon:13.4128,time:"08:10"},
+  {name:"HBF",lat:52.5231,lon:13.4145,time:"08:15"}
 ];
-const baseTime="08:00";
-const sollHeadway=600;
-
 let stopIndex=0;
-let currentPos=null;
-let lastPos=null;
 
-/* ================= MAP ================= */
+/* ===== FPH PAPIER ===== */
+const paper=document.getElementById("paper");
+
+function renderPaper(){
+  paper.innerHTML="";
+  stops.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="line"+
+      (i<stopIndex?" past":"")+
+      (i===stopIndex?" current":"");
+    d.textContent=s.name;
+    paper.appendChild(d);
+  });
+  paper.style.transform=`translateY(${-stopIndex*48}px)`;
+}
+renderPaper();
+
+function nextStop(){
+  if(stopIndex<stops.length-1){
+    stopIndex++;
+    renderPaper();
+    updateDelay();
+  }
+}
+function prevStop(){
+  if(stopIndex>0){
+    stopIndex--;
+    renderPaper();
+    updateDelay();
+  }
+}
+
+/* ===== ZEIT / DELAY ===== */
+function timeToSec(t){
+  const [h,m]=t.split(":").map(Number);
+  return h*3600+m*60;
+}
+function updateDelay(){
+  const plan=timeToSec(stops[stopIndex].time);
+  const n=new Date();
+  const now=n.getHours()*3600+n.getMinutes()*60+n.getSeconds();
+  const d=now-plan;
+  const a=Math.abs(d);
+  delay.textContent=`${d>=0?"+":"-"}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;
+}
+setInterval(updateDelay,1000);
+
+/* ===== MAP ===== */
 const map=L.map("map",{zoomControl:false,dragging:false})
   .setView([52.52,13.41],15);
 
@@ -161,40 +205,27 @@ L.tileLayer(
   {maxZoom:19}
 ).addTo(map);
 
-/* ================= TRACK ================= */
-const trackCoords=stops.map(s=>[s.lat,s.lon]);
-let track=L.polyline(trackCoords,{color:"#00FF88",weight:5}).addTo(map);
+/* ===== TRACK ===== */
+const track=L.polyline(
+  stops.map(s=>[s.lat,s.lon]),
+  {color:"#00FF88",weight:5}
+).addTo(map);
 
-/* ================= ARROW ================= */
-let arrowMarker=null;
+/* ===== PFEIL ===== */
+let arrow=null;
+let lastPos=null;
 
 function arrowIcon(angle){
   return L.divIcon({
     html:`
-      <div class="arrowMarker" style="transform:rotate(${angle}deg)">
+      <div class="arrow" style="transform:rotate(${angle}deg)">
         <svg viewBox="0 0 64 64">
-          <!-- KEIN stroke, nur fill -->
           <path d="M32 4 L52 52 L32 44 L12 52 Z" fill="#58A6FF"/>
         </svg>
       </div>`,
-    iconSize:[40,40],
-    iconAnchor:[20,20]
+    iconSize:[42,42],
+    iconAnchor:[21,21]
   });
-}
-
-function setArrow(lat,lon,angle){
-  if(!arrowMarker){
-    arrowMarker=L.marker([lat,lon],{icon:arrowIcon(angle)}).addTo(map);
-  }else{
-    arrowMarker.setLatLng([lat,lon]);
-    arrowMarker.setIcon(arrowIcon(angle));
-  }
-}
-
-/* ================= BERECHNUNGEN ================= */
-function timeToSec(t){
-  const [h,m]=t.split(":").map(Number);
-  return h*3600+m*60;
 }
 
 function bearing(a,b){
@@ -206,79 +237,33 @@ function bearing(a,b){
   return (Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 
-/* ================= GPS ================= */
+/* ===== GPS ===== */
 function gpsStart(){
   navigator.geolocation.watchPosition(p=>{
-    currentPos={lat:p.coords.latitude,lon:p.coords.longitude};
-
+    const pos={lat:p.coords.latitude,lon:p.coords.longitude};
     let angle=p.coords.heading;
-    if((angle==null||angle<0)&&lastPos){
-      angle=bearing(lastPos,currentPos);
-    }
+    if((angle==null||angle<0)&&lastPos) angle=bearing(lastPos,pos);
     if(angle==null) angle=0;
 
-    setArrow(currentPos.lat,currentPos.lon,angle);
-    map.setView([currentPos.lat,currentPos.lon],map.getZoom());
-
-    updateDelay();
-    updateHeadway();
-
-    lastPos=currentPos;
-  },()=>{}, {enableHighAccuracy:true,maximumAge:1000});
+    if(!arrow){
+      arrow=L.marker([pos.lat,pos.lon],{icon:arrowIcon(angle)}).addTo(map);
+    }else{
+      arrow.setLatLng([pos.lat,pos.lon]);
+      arrow.setIcon(arrowIcon(angle));
+    }
+    map.setView([pos.lat,pos.lon],map.getZoom());
+    lastPos=pos;
+  },()=>{}, {enableHighAccuracy:true});
 }
 
-/* ================= DELAY / HEADWAY ================= */
-function getCurrentDelaySec(){
-  const plan=timeToSec(stops[stopIndex].time);
-  const now=new Date();
-  const cur=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
-  return cur-plan;
-}
-
-function updateDelay(){
-  const d=getCurrentDelaySec();
-  const a=Math.abs(d);
-  delay.textContent=`${d>=0?"+":"-"}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;
-  delay.style.color=a<60?varGreen():a<180?varOrange():varRed();
-}
-
-function updateHeadway(){
-  const ist=timeToSec(baseTime)+getCurrentDelaySec();
-  const r=ist/sollHeadway;
-  headway.textContent=`HW ${Math.floor(ist/60)}:${String(ist%60).padStart(2,"0")} / ${Math.floor(sollHeadway/60)}:00`;
-  headway.style.color=r>=1?varGreen():r>=0.7?varOrange():varRed();
-}
-
-function varGreen(){return getComputedStyle(document.documentElement).getPropertyValue('--green')}
-function varOrange(){return getComputedStyle(document.documentElement).getPropertyValue('--orange')}
-function varRed(){return getComputedStyle(document.documentElement).getPropertyValue('--red')}
-
-/* ================= STOPS UI ================= */
-function renderStops(){
-  stopList.innerHTML="";
-  stops.forEach((s,i)=>{
-    const d=document.createElement("div");
-    d.className="stop"+(i===stopIndex?" active":"")+(i<stopIndex?" done":"");
-    d.innerHTML=`<div>${s.name}</div><div>${s.time}</div><div>–</div>`;
-    stopList.appendChild(d);
-  });
-}
-renderStops();
-
-function nextStop(){if(stopIndex<stops.length-1){stopIndex++;renderStops()}}
-function prevStop(){if(stopIndex>0){stopIndex--;renderStops()}}
-
-/* ================= TRACK CONTROLS ================= */
+/* ===== TRACK CONTROLS ===== */
 function toggleTrack(){
   if(map.hasLayer(track)) map.removeLayer(track);
   else track.addTo(map);
 }
-function centerOnTrack(){
+function centerTrack(){
   map.fitBounds(track.getBounds(),{padding:[40,40]});
 }
-
-/* LIVE TIMER */
-setInterval(()=>{updateDelay();updateHeadway()},1000);
 </script>
 
 </body>
