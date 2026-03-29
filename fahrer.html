@@ -6,7 +6,6 @@
 
   <meta name="viewport"
         content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -30,10 +29,13 @@
       touch-action:none;
       -webkit-user-select:none;
       -webkit-touch-callout:none;
-      -webkit-text-size-adjust: 100%;
+      -webkit-text-size-adjust:100%;
     }
 
-    /* ---------- PIN LOCK (nur beim Laden) ---------- */
+    /* iOS zoom blocken */
+    document, body { -webkit-text-size-adjust: 100%; }
+
+    /* ---------- PIN nur beim Laden ---------- */
     #pinLock{
       position:fixed; inset:0; z-index:100000;
       background:#000;
@@ -48,25 +50,44 @@
       padding:18px;
       box-shadow:0 18px 50px rgba(0,0,0,0.65);
     }
-    .pinTitle{ margin:0 0 10px; font-size:1.4rem; font-weight:900; color:var(--blue2); text-align:center;}
+    .pinTitle{
+      margin:0 0 10px;
+      font-size:1.4rem;
+      font-weight:900;
+      color:var(--blue2);
+      text-align:center;
+    }
     #pinDisplay{
-      font-size:2rem; font-weight:900;
-      letter-spacing:10px; text-align:center;
-      margin:10px 0 14px; padding:10px 0;
+      font-size:2rem;
+      font-weight:900;
+      letter-spacing:10px;
+      text-align:center;
+      margin:10px 0 14px;
+      padding:10px 0;
       border-radius:14px;
       background:rgba(0,0,0,0.35);
       border:1px solid rgba(255,255,255,0.12);
     }
     .pinPad{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
     .pinBtn{
-      height:64px; border:none; border-radius:16px;
+      height:64px;
+      border:none;
+      border-radius:16px;
       background:linear-gradient(135deg,var(--blue),var(--blue2));
-      color:#0B1220; font-size:1.4rem; font-weight:900;
+      color:#0B1220;
+      font-size:1.4rem;
+      font-weight:900;
       cursor:pointer;
     }
     .pinBtn:active{ transform:scale(0.98); }
     .pinBtn.clear{ background:var(--red); color:#0B1220; }
-    .pinHint{ margin-top:10px; text-align:center; color:var(--muted); font-size:.95rem; font-weight:800; }
+    .pinHint{
+      margin-top:10px;
+      text-align:center;
+      color:var(--muted);
+      font-size:.95rem;
+      font-weight:800;
+    }
 
     /* ---------- HEADER ---------- */
     .header{
@@ -82,7 +103,7 @@
       padding:8px 10px;
       border-radius:10px;
       font-weight:900;
-      max-width: 46vw;
+      max-width: 55vw;
     }
     .rightHeader{ text-align:right; line-height:1.1; }
     #delay{ font-size:1.55rem; font-weight:900; }
@@ -91,7 +112,7 @@
     /* ---------- MAIN GRID ---------- */
     .main{
       display:grid;
-      grid-template-columns: 34% 8px 1fr;
+      grid-template-columns: 42% 8px 1fr;
       height:calc(100% - 72px);
     }
 
@@ -111,18 +132,18 @@
     .divider{ background:var(--divider); }
 
     /* ---------- RIGHT: Map + Controls ---------- */
-    .right{ display:grid; grid-template-rows: 1fr 96px; }
+    .right{ display:grid; grid-template-rows: 1fr 64px 64px; }
     #map{ width:100%; height:100%; }
 
     .controls{
-      display:grid; grid-template-columns:repeat(6,1fr);
-      gap:10px; padding:10px;
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:10px; padding:8px;
       background:var(--panel);
       border-top:1px solid var(--line);
     }
     .btn{
-      border:none; border-radius:14px; padding:14px;
-      font-weight:900; font-size:1.0rem;
+      border:none; border-radius:14px; padding:12px;
+      font-weight:900; font-size:0.95rem;
       background:linear-gradient(135deg,var(--blue),var(--blue2));
       color:#0B1220; cursor:pointer;
     }
@@ -131,6 +152,10 @@
       background:rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.12);
       color:#fff;
+    }
+    .btn.danger{
+      background:var(--red);
+      color:#0B1220;
     }
 
     /* ---------- OVERLAY Werkstatt ---------- */
@@ -175,46 +200,47 @@
     .tab.active{ display:block; }
 
     .wsHint{ color:var(--muted); font-weight:800; margin-bottom:10px; }
-    .wsList{ display:flex; flex-direction:column; gap:10px; }
-    .wsItem{
+    .wsBlock{
       border:1px solid var(--line);
       border-radius:14px;
-      padding:10px;
+      padding:12px;
       background:rgba(255,255,255,.03);
+      margin-bottom:12px;
     }
-    .wsRow{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+    .wsRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
     .wsTitle{ font-weight:900; }
     .wsSmall{ color:var(--muted); font-weight:800; font-size:.9rem; }
     .wsActions{ display:flex; gap:8px; flex-wrap:wrap; }
     .wsBtn{
       border:none; border-radius:10px; padding:8px 10px;
       font-weight:900;
-      background:rgba(255,255,255,.08); color:#fff;
+      background:rgba(255,255,255,.08);
+      color:#fff;
       cursor:pointer;
     }
-    .wsBtn.primary{ background:linear-gradient(135deg,var(--blue),var(--blue2)); color:#0B1220; }
-    .wsBtn.danger{ background:var(--red); color:#0B1220; }
-
-    .formGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .formGrid label{ font-weight:900; color:var(--muted); font-size:.9rem; }
-    .formGrid input{
+    .wsBtn.primary{
+      background:linear-gradient(135deg,var(--blue),var(--blue2));
+      color:#0B1220;
+    }
+    .wsBtn.danger{
+      background:var(--red);
+      color:#0B1220;
+    }
+    input[type="file"]{
       width:100%;
-      background:#0D1117; color:#fff;
-      border:1px solid var(--line);
-      border-radius:10px;
       padding:10px;
-      font-weight:900;
-      outline:none;
+      border-radius:12px;
+      border:1px dashed rgba(255,255,255,.25);
+      background:rgba(0,0,0,.2);
+      color:#fff;
     }
-    .stopEditor{ margin-top:10px; border-top:1px solid var(--line); padding-top:10px; }
-    .stopRowEdit{
-      display:grid; grid-template-columns: 1.2fr 0.6fr 0.6fr 0.7fr;
-      gap:8px;
-      padding:8px;
-      border-bottom:1px solid var(--line);
-      align-items:center;
-    }
-    .stopRowEdit input{ padding:8px; border-radius:10px; }
+    code{ color: var(--blue2); font-weight:900; }
   </style>
 </head>
 
@@ -259,12 +285,16 @@
 
     <div class="right">
       <div id="map"></div>
+
       <div class="controls">
         <button class="btn" id="gpsBtn" onclick="gpsStart()">📍 GPS</button>
         <button class="btn ghost" onclick="prevStop()">◀</button>
         <button class="btn ghost" onclick="nextStop()">▶</button>
-        <button class="btn ghost" onclick="playHalt()">🔊 Halt</button>
-        <button class="btn ghost" onclick="openSonderPlay()">📣 Sonder</button>
+      </div>
+
+      <div class="controls">
+        <button class="btn ghost" onclick="centerOnTrack()">🧭 Track</button>
+        <button class="btn ghost" onclick="toggleTrack()">🧵 Route</button>
         <button class="btn" onclick="openWorkshop()">🔧</button>
       </div>
     </div>
@@ -280,74 +310,44 @@
     </header>
 
     <nav>
-      <button onclick="openTab('trips')">Fahrten</button>
-      <button onclick="openTab('halt')">Ansage Halt</button>
-      <button onclick="openTab('sonder')">Sonderansagen</button>
-      <button onclick="openTab('addtrip')">Fahrt einfügen</button>
+      <button onclick="openTab('track')">Track je Linie</button>
+      <button onclick="openTab('info')">Info</button>
     </nav>
 
-    <div id="tab-trips" class="tab">
-      <div class="wsHint">Aktive Fahrt setzen oder löschen.</div>
-      <div class="wsList" id="wsTrips"></div>
-    </div>
-
-    <div id="tab-halt" class="tab">
-      <div class="wsHint">Haltestellen-Ansagen: pro Halt Audio hochladen. Fahrer: Button „🔊 Halt“.</div>
-      <div class="wsList" id="haltList"></div>
-    </div>
-
-    <div id="tab-sonder" class="tab">
-      <div class="wsHint">Sonderansagen: Seitenweise (4 pro Seite). Upload/Play/Leeren.</div>
-      <div class="wsRow" style="margin-bottom:10px;">
-        <div class="wsSmall" id="sonderPageInfo">Seite 1/1</div>
-        <div class="wsActions">
-          <button class="wsBtn" onclick="sonderPrev()">⬅</button>
-          <button class="wsBtn" onclick="sonderNext()">➡</button>
-          <button class="wsBtn primary" onclick="sonderAddPage()">➕ Seite</button>
-        </div>
-      </div>
-      <div class="wsList" id="sonderSlots"></div>
-    </div>
-
-    <div id="tab-addtrip" class="tab">
-      <div class="wsHint">Neue Fahrt anlegen – komplett über UI, ohne Code ändern.</div>
-
-      <div class="formGrid">
-        <div>
-          <label>Linie</label>
-          <input id="newLine" placeholder="z.B. Linie 1">
-        </div>
-        <div>
-          <label>Name (Anzeige)</label>
-          <input id="newName" placeholder="z.B. Linie 1 → Hbf (08:30)">
-        </div>
-        <div>
-          <label>Startzeit (baseTime HH:MM)</label>
-          <input id="newBaseTime" placeholder="08:30">
-        </div>
-        <div>
-          <label>Soll-Headway (Minuten)</label>
-          <input id="newSoll" placeholder="10">
-        </div>
-      </div>
-
-      <div class="stopEditor">
+    <div id="tab-track" class="tab active">
+      <div class="wsBlock">
         <div class="wsRow">
-          <div class="wsTitle">Haltestellen</div>
+          <div>
+            <div class="wsTitle">Aktive Linie</div>
+            <div class="wsSmall">Line-ID: <code id="lineIdLabel">—</code></div>
+          </div>
           <div class="wsActions">
-            <button class="wsBtn primary" onclick="addStopRow()">➕ Halt</button>
-            <button class="wsBtn" onclick="clearStopRows()">🧹 Leeren</button>
+            <button class="wsBtn primary" onclick="fitTrack()">Auf Track zoomen</button>
+            <button class="wsBtn danger" onclick="deleteLineTrack()">Track löschen</button>
           </div>
         </div>
+      </div>
 
-        <div class="wsSmall" style="margin:8px 0;">
-          Pro Halt: Name · Lat · Lon · Planzeit (HH:MM).
+      <div class="wsBlock">
+        <div class="wsTitle">Track hochladen (überschreibt bestehenden Track dieser Linie)</div>
+        <div class="wsSmall" style="margin:6px 0 10px">
+          Erlaubt: <code>.gpx</code> oder <code>.geojson</code> (LineString / FeatureCollection).
+          Pro Linie wird immer nur <b>ein</b> Track gespeichert.
         </div>
+        <input type="file" accept=".gpx,.geojson,application/geo+json,application/json,application/gpx+xml" onchange="uploadLineTrack(event)">
+      </div>
 
-        <div id="stopRows"></div>
+      <div class="wsBlock">
+        <div class="wsTitle">Aktueller Track-Status</div>
+        <div class="wsSmall" id="trackStatus">—</div>
+      </div>
+    </div>
 
-        <div class="wsRow" style="margin-top:10px;">
-          <button class="wsBtn primary" onclick="saveNewTrip()">💾 Fahrt speichern</button>
+    <div id="tab-info" class="tab">
+      <div class="wsBlock">
+        <div class="wsTitle">Hinweis</div>
+        <div class="wsSmall">
+          Track wird in <code>LocalStorage</code> gespeichert (pro iPad). Wenn du die WebApp löschst, gehen Daten verloren.
         </div>
       </div>
     </div>
@@ -355,7 +355,7 @@
 </div>
 
 <script>
-/* ================== iOS Zoom zusätzlich blocken ================== */
+/* ================= iOS: Pinch/Double-Tap Zoom blocken ================= */
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('gesturechange', e => e.preventDefault());
 document.addEventListener('gestureend', e => e.preventDefault());
@@ -366,7 +366,7 @@ document.addEventListener('touchend', function (event) {
   lastTouchEnd = now;
 }, false);
 
-/* ================== PIN nur beim Laden ================== */
+/* ================= PIN nur beim Laden ================= */
 const ENTRY_PIN = "2580";
 let pin = "";
 const pinDisplay = document.getElementById("pinDisplay");
@@ -384,12 +384,11 @@ function pinSubmit(){
 }
 updatePin();
 
-/* ================== Storage Keys ================== */
+/* ================= Storage Keys ================= */
 const K_TRIPS="ivu_fahrten_v2";
-const K_SONDER="ivu_sonder_pages_v2";
-const K_HALT="ivu_halt_ansagen_v1";
+const K_LINE_TRACKS="ivu_line_tracks_v1";
 
-/* ================== Default Trips (Fallback) ================== */
+/* ================= Defaults ================= */
 const defaultTrips=[{
   id:"demo1",
   line:"Linie 1", sollHeadway:600, baseTime:"08:00",
@@ -402,30 +401,22 @@ const defaultTrips=[{
   ]
 }];
 
-/* ================== State ================== */
+/* ================= State ================= */
 let trips = loadJSON(K_TRIPS, defaultTrips);
 let tripIndex=0;
 let stopIndex=0;
 let currentPos=null;
 let gpsWatchId=null;
 
-const LEAVE_RADIUS=500;
-const SWITCH_COOLDOWN_MS=15000;
-let lastDist=null;
-let lastSwitch=0;
+let lineTracks = loadJSON(K_LINE_TRACKS, {}); // { "Linie 1": { name, coords:[[lat,lon]...], updatedAt } }
+let trackLayer = null;
+let trackVisible = true;
 
-/* Sonderansagen: pages[pageIndex][slotIndex] = dataURL|null */
-let sonder = loadJSON(K_SONDER, { pageIndex:0, pages:[ [null,null,null,null] ] });
-
-/* Haltestellen-Ansagen: key -> {name,data} */
-let haltAnsagen = loadJSON(K_HALT, {}); // {"tripId::stopIndex":{name,data}}
-
-/* ================== Helpers ================== */
+/* ================= Helpers ================= */
 function loadJSON(key, fallback){
   try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch{ return fallback; }
 }
 function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-function uid(){ return "t_" + Math.random().toString(16).slice(2) + Date.now().toString(16); }
 function timeToSec(t){ const [h,m]=String(t).split(":").map(Number); return h*3600+m*60; }
 function hav(a,b){
   const R=6371000;
@@ -434,30 +425,8 @@ function hav(a,b){
   const x=Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
   return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-function haltKey(tid, idx){ return `${tid}::${idx}`; }
 
-/* ================== Map ================== */
-let map, marker;
-function initMap(){
-  const s = trips[tripIndex]?.stops?.[0] || {lat:52.52,lon:13.41};
-  map=L.map("map",{
-    zoomControl:false, attributionControl:false,
-    dragging:false, scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false,
-    keyboard:false, tap:false
-  }).setView([s.lat,s.lon],16);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
-
-  marker=L.circleMarker([s.lat,s.lon],{radius:8,color:"#1F6FEB",fillColor:"#58A6FF",fillOpacity:1}).addTo(map);
-}
-initMap();
-
-function follow(lat,lon){
-  marker.setLatLng([lat,lon]);
-  map.setView([lat,lon], map.getZoom(), {animate:true, duration:0.5});
-}
-
-/* ================== Trips Select ================== */
+/* ================= Trips Select ================= */
 const tripSelect=document.getElementById("tripSelect");
 function refreshTripSelect(){
   tripSelect.innerHTML="";
@@ -471,7 +440,29 @@ function refreshTripSelect(){
 }
 refreshTripSelect();
 
-/* ================== Render Stops ================== */
+/* ================= Map ================= */
+let map, marker;
+function initMap(){
+  const s = trips[tripIndex]?.stops?.[0] || {lat:52.52,lon:13.41};
+  map=L.map("map",{
+    zoomControl:false, attributionControl:false,
+    dragging:false, scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false,
+    keyboard:false, tap:false
+  }).setView([s.lat,s.lon],16);
+
+  // Dark tiles
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
+
+  marker=L.circleMarker([s.lat,s.lon],{radius:8,color:"#1F6FEB",fillColor:"#58A6FF",fillOpacity:1}).addTo(map);
+}
+initMap();
+
+function follow(lat,lon){
+  marker.setLatLng([lat,lon]);
+  map.setView([lat,lon], map.getZoom(), {animate:true, duration:0.35});
+}
+
+/* ================= Render Stops ================= */
 function renderStops(){
   const list=document.getElementById("stopList");
   list.innerHTML="";
@@ -489,7 +480,7 @@ function renderStops(){
 }
 renderStops();
 
-/* ================== Delay ================== */
+/* ================= Delay ================= */
 function getCurrentDelaySec(){
   const t=trips[tripIndex];
   if(!t || !t.stops[stopIndex]) return 0;
@@ -512,7 +503,7 @@ function updateDelay(){
   el.style.color = a<60 ? "var(--green)" : a<180 ? "var(--orange)" : "var(--red)";
 }
 
-/* ================== Headway IST/SOLL ================== */
+/* ================= Headway IST/SOLL ================= */
 function updateHeadway(){
   const cur=trips[tripIndex];
   const el=document.getElementById("headway");
@@ -540,7 +531,12 @@ function updateHeadway(){
   el.style.color = ratio>=1 ? "var(--green)" : ratio>=0.7 ? "var(--orange)" : "var(--red)";
 }
 
-/* ================== Auto-Vorschaltung ================== */
+/* ================= Auto-Vorschaltung ================= */
+const LEAVE_RADIUS=500;
+const SWITCH_COOLDOWN_MS=15000;
+let lastDist=null;
+let lastSwitch=0;
+
 function autoAdvance(){
   const t=trips[tripIndex];
   const s=t?.stops?.[stopIndex];
@@ -562,7 +558,7 @@ function autoAdvance(){
   lastDist=d;
 }
 
-/* ================== Buttons ================== */
+/* ================= Buttons ================= */
 function nextStop(){
   const t=trips[tripIndex];
   if(stopIndex < t.stops.length-1){
@@ -582,13 +578,11 @@ function selectTrip(i){
   lastDist=null; lastSwitch=0;
   refreshTripSelect();
   renderStops(); updateDelay(); updateHeadway();
-  // Werkstattlisten aktualisieren, falls offen
-  if(document.getElementById("overlay").style.display==="flex"){
-    renderWsTrips(); renderHaltAnsagen(); renderSonder();
-  }
+  refreshTrackUI();
+  drawTrackForCurrentLine();
 }
 
-/* ================== GPS ================== */
+/* ================= GPS ================= */
 function gpsStart(){
   if(!navigator.geolocation){ alert("GPS nicht verfügbar"); return; }
   if(gpsWatchId){ alert("GPS läuft bereits"); return; }
@@ -603,274 +597,186 @@ function gpsStart(){
   }, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
 }
 
-/* ================== Sonderansagen: Fahrer Play ================== */
-function openSonderPlay(){
-  const page = sonder.pages[sonder.pageIndex] || [null,null,null,null];
-  const choices = page.map((s,i)=> `${i+1}: ${s ? "belegt" : "leer"}`).join("\n");
-  const pick = prompt(`Sonderansage abspielen (Seite ${sonder.pageIndex+1})\n${choices}`, "1");
-  const idx = Number(pick)-1;
-  if(!Number.isFinite(idx) || idx<0 || idx>3) return;
-  const data = page[idx];
-  if(!data) return alert("Slot ist leer.");
-  new Audio(data).play().catch(()=>alert("Audio konnte nicht abgespielt werden."));
-}
-
-/* ================== 🔊 ANSAGE-HALT (Fahrer) ================== */
-function playHalt(){
+/* ================= Track je Linie (nur 1 Track pro Linie, überschreiben) ================= */
+function currentLineId(){
   const t=trips[tripIndex];
-  if(!t) return alert("Keine Fahrt gewählt.");
-  const key = haltKey(t.id || ("idx"+tripIndex), stopIndex);
-  const entry = haltAnsagen[key];
-  if(!entry || !entry.data){
-    alert("Keine Haltestellen-Ansage hinterlegt (Werkstatt → Ansage Halt).");
-    return;
-  }
-  const a = new Audio(entry.data);
-  a.play().catch(()=>alert("Audio konnte nicht abgespielt werden."));
+  return (t && t.line) ? t.line : "UNBEKANNT";
 }
 
-/* ================== Werkstatt Overlay (ohne PIN) ================== */
+function refreshTrackUI(){
+  const lineId = currentLineId();
+  document.getElementById("lineIdLabel").textContent = lineId;
+
+  const entry = lineTracks[lineId];
+  const st = document.getElementById("trackStatus");
+  if(!entry){
+    st.textContent = "Kein Track gespeichert.";
+  }else{
+    const pts = entry.coords?.length || 0;
+    const dt = entry.updatedAt ? new Date(entry.updatedAt).toLocaleString() : "—";
+    st.textContent = `Track: ${entry.name} · Punkte: ${pts} · Updated: ${dt}`;
+  }
+}
+
+function setLineTrack(lineId, trackObj){
+  lineTracks[lineId] = trackObj;
+  saveJSON(K_LINE_TRACKS, lineTracks);
+  refreshTrackUI();
+  drawTrackForCurrentLine();
+}
+
+function deleteLineTrack(){
+  const lineId = currentLineId();
+  if(!confirm(`Track für "${lineId}" wirklich löschen?`)) return;
+  delete lineTracks[lineId];
+  saveJSON(K_LINE_TRACKS, lineTracks);
+  refreshTrackUI();
+  removeTrackLayer();
+}
+
+function removeTrackLayer(){
+  if(trackLayer){
+    map.removeLayer(trackLayer);
+    trackLayer = null;
+  }
+}
+
+function drawTrackForCurrentLine(){
+  removeTrackLayer();
+  const lineId = currentLineId();
+  const entry = lineTracks[lineId];
+  if(!entry || !entry.coords || entry.coords.length < 2) return;
+
+  if(!trackVisible) return;
+
+  trackLayer = L.polyline(entry.coords, {
+    color: "#00FF88",
+    weight: 5,
+    opacity: 0.95
+  }).addTo(map);
+}
+
+function toggleTrack(){
+  trackVisible = !trackVisible;
+  drawTrackForCurrentLine();
+  if(trackVisible) fitTrack();
+}
+
+function fitTrack(){
+  if(!trackLayer) return;
+  map.fitBounds(trackLayer.getBounds(), { padding: [40,40] });
+}
+
+function centerOnTrack(){
+  if(trackLayer) fitTrack();
+  else alert("Kein Track geladen.");
+}
+
+/* Upload: GPX oder GeoJSON, überschreibt Track der aktuellen Linie */
+function uploadLineTrack(e){
+  const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+  if(!file) return;
+
+  const lineId = currentLineId();
+  const exists = !!lineTracks[lineId];
+
+  if(exists){
+    const ok = confirm(`Für "${lineId}" existiert bereits ein Track.\nÜberschreiben mit "${file.name}"?`);
+    if(!ok) { e.target.value=""; return; }
+  }
+
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const text = reader.result;
+      const coords = parseTrackCoords(file.name, text);
+      if(!coords || coords.length < 2){
+        alert("Track konnte nicht gelesen werden oder hat zu wenige Punkte.");
+        return;
+      }
+
+      setLineTrack(lineId, {
+        name: file.name,
+        coords,
+        updatedAt: new Date().toISOString()
+      });
+
+      fitTrack();
+      e.target.value="";
+    }catch(err){
+      console.error(err);
+      alert("Fehler beim Verarbeiten der Datei.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* Parser */
+function parseTrackCoords(filename, content){
+  const lower = filename.toLowerCase();
+
+  // GPX
+  if(lower.endsWith(".gpx")){
+    const xml = new DOMParser().parseFromString(content, "text/xml");
+    const pts = Array.from(xml.getElementsByTagName("trkpt"));
+    const coords = pts.map(p => [Number(p.getAttribute("lat")), Number(p.getAttribute("lon"))])
+                      .filter(x => Number.isFinite(x[0]) && Number.isFinite(x[1]));
+    return coords;
+  }
+
+  // GeoJSON
+  const gj = JSON.parse(content);
+
+  function coordsFromGeometry(geom){
+    if(!geom) return [];
+    if(geom.type === "LineString"){
+      return geom.coordinates.map(c => [c[1], c[0]]);
+    }
+    if(geom.type === "MultiLineString"){
+      // concat all lines
+      return geom.coordinates.flat().map(c => [c[1], c[0]]);
+    }
+    return [];
+  }
+
+  if(gj.type === "FeatureCollection"){
+    // take first LineString-like feature
+    for(const f of gj.features || []){
+      const coords = coordsFromGeometry(f.geometry);
+      if(coords.length >= 2) return coords;
+    }
+    return [];
+  }
+
+  if(gj.type === "Feature"){
+    return coordsFromGeometry(gj.geometry);
+  }
+
+  // raw geometry
+  return coordsFromGeometry(gj);
+}
+
+/* ================= Werkstatt Overlay (ohne PIN) ================= */
 function openWorkshop(){
   document.getElementById("overlay").style.display="flex";
-  openTab("trips");
-  renderWsTrips();
-  renderHaltAnsagen();
-  renderSonder();
+  openTab("track");
+  refreshTrackUI();
 }
-function closeWorkshop(){ document.getElementById("overlay").style.display="none"; }
+function closeWorkshop(){
+  document.getElementById("overlay").style.display="none";
+}
 function openTab(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("tab-"+id).classList.add("active");
 }
 
-/* Fahrten Tab */
-function renderWsTrips(){
-  const box=document.getElementById("wsTrips");
-  box.innerHTML="";
-  trips.forEach((t,i)=>{
-    const item=document.createElement("div");
-    item.className="wsItem";
-    item.innerHTML=`
-      <div class="wsRow">
-        <div>
-          <div class="wsTitle">${t.name}</div>
-          <div class="wsSmall">Linie: ${t.line} · baseTime: ${t.baseTime} · Soll HW: ${Math.floor((t.sollHeadway||600)/60)} min</div>
-        </div>
-        <div class="wsActions">
-          <button class="wsBtn primary" onclick="selectTrip(${i});closeWorkshop()">Aktiv</button>
-          <button class="wsBtn danger" onclick="deleteTrip(${i})">Löschen</button>
-        </div>
-      </div>
-    `;
-    box.appendChild(item);
-  });
-}
-function deleteTrip(i){
-  if(!confirm("Fahrt wirklich löschen?")) return;
-  trips.splice(i,1);
-  if(trips.length===0){ trips = JSON.parse(JSON.stringify(defaultTrips)); }
-  if(tripIndex >= trips.length) tripIndex = 0;
-  saveJSON(K_TRIPS, trips);
-  refreshTripSelect();
-  renderWsTrips();
-  renderStops(); updateDelay(); updateHeadway();
-  renderHaltAnsagen();
-}
-
-/* ================== Ansage Halt (Werkstatt Upload/Play/Clear) ================== */
-function renderHaltAnsagen(){
-  const box=document.getElementById("haltList");
-  box.innerHTML="";
-  const t=trips[tripIndex];
-  if(!t){ box.textContent="Keine Fahrt"; return; }
-
-  t.stops.forEach((s,i)=>{
-    const key = haltKey(t.id || ("idx"+tripIndex), i);
-    const entry = haltAnsagen[key];
-
-    const item=document.createElement("div");
-    item.className="wsItem";
-    item.innerHTML=`
-      <div class="wsRow">
-        <div>
-          <div class="wsTitle">${i+1}. ${s.name}</div>
-          <div class="wsSmall">Plan: ${s.time} · Datei: ${entry?.name || "—"}</div>
-        </div>
-        <div class="wsActions">
-          <button class="wsBtn primary" onclick="uploadHalt(${i})">Upload</button>
-          <button class="wsBtn" onclick="playHaltIdx(${i})" ${entry?.data ? "" : "disabled"}>Play</button>
-          <button class="wsBtn danger" onclick="clearHaltIdx(${i})" ${entry?.data ? "" : "disabled"}>Leeren</button>
-        </div>
-      </div>
-    `;
-    box.appendChild(item);
-  });
-}
-
-function uploadHalt(i){
-  const t=trips[tripIndex];
-  const key = haltKey(t.id || ("idx"+tripIndex), i);
-
-  const input=document.createElement("input");
-  input.type="file";
-  input.accept="audio/*";
-  input.onchange=(e)=>{
-    const file=e.target.files[0];
-    if(!file) return;
-    const r=new FileReader();
-    r.onload=()=>{
-      haltAnsagen[key] = { name:file.name, data:r.result };
-      saveJSON(K_HALT, haltAnsagen);
-      renderHaltAnsagen();
-    };
-    r.readAsDataURL(file);
-  };
-  input.click();
-}
-
-function playHaltIdx(i){
-  const t=trips[tripIndex];
-  const key = haltKey(t.id || ("idx"+tripIndex), i);
-  const entry = haltAnsagen[key];
-  if(!entry?.data) return;
-  new Audio(entry.data).play().catch(()=>alert("Audio konnte nicht abgespielt werden."));
-}
-
-function clearHaltIdx(i){
-  const t=trips[tripIndex];
-  const key = haltKey(t.id || ("idx"+tripIndex), i);
-  delete haltAnsagen[key];
-  saveJSON(K_HALT, haltAnsagen);
-  renderHaltAnsagen();
-}
-
-/* ================== Sonderansagen (Werkstatt) ================== */
-function saveSonder(){ saveJSON(K_SONDER, sonder); }
-function sonderPrev(){ if(sonder.pageIndex>0){ sonder.pageIndex--; saveSonder(); renderSonder(); } }
-function sonderNext(){ if(sonder.pageIndex<sonder.pages.length-1){ sonder.pageIndex++; saveSonder(); renderSonder(); } }
-function sonderAddPage(){ sonder.pages.push([null,null,null,null]); sonder.pageIndex=sonder.pages.length-1; saveSonder(); renderSonder(); }
-
-function renderSonder(){
-  document.getElementById("sonderPageInfo").textContent = `Seite ${sonder.pageIndex+1}/${sonder.pages.length}`;
-  const box=document.getElementById("sonderSlots");
-  box.innerHTML="";
-  const page = sonder.pages[sonder.pageIndex] || [null,null,null,null];
-  sonder.pages[sonder.pageIndex] = page;
-
-  for(let i=0;i<4;i++){
-    const data = page[i];
-    const item=document.createElement("div");
-    item.className="wsItem";
-    item.innerHTML=`
-      <div class="wsRow">
-        <div>
-          <div class="wsTitle">Sonderansage ${i+1}</div>
-          <div class="wsSmall">${data ? "Datei gespeichert" : "leer"}</div>
-        </div>
-        <div class="wsActions">
-          <button class="wsBtn primary" onclick="uploadSonder(${i})">Upload</button>
-          <button class="wsBtn" onclick="playSonder(${i})" ${data? "" : "disabled"}>Play</button>
-          <button class="wsBtn danger" onclick="clearSonder(${i})" ${data? "" : "disabled"}>Leeren</button>
-        </div>
-      </div>
-    `;
-    box.appendChild(item);
-  }
-}
-
-function uploadSonder(i){
-  const input=document.createElement("input");
-  input.type="file";
-  input.accept="audio/*";
-  input.onchange=(e)=>{
-    const file=e.target.files[0];
-    if(!file) return;
-    const r=new FileReader();
-    r.onload=()=>{
-      sonder.pages[sonder.pageIndex][i]=r.result;
-      saveSonder();
-      renderSonder();
-    };
-    r.readAsDataURL(file);
-  };
-  input.click();
-}
-function playSonder(i){
-  const data=sonder.pages[sonder.pageIndex][i];
-  if(!data) return;
-  new Audio(data).play().catch(()=>alert("Audio konnte nicht abgespielt werden."));
-}
-function clearSonder(i){
-  sonder.pages[sonder.pageIndex][i]=null;
-  saveSonder();
-  renderSonder();
-}
-
-/* ================== Fahrt einfügen (UI) ================== */
-function addStopRow(pref={}){
-  const host=document.getElementById("stopRows");
-  const row=document.createElement("div");
-  row.className="stopRowEdit";
-  row.innerHTML=`
-    <input placeholder="Name" value="${pref.name||""}">
-    <input placeholder="Lat" value="${pref.lat??""}">
-    <input placeholder="Lon" value="${pref.lon??""}">
-    <input placeholder="HH:MM" value="${pref.time||""}">
-  `;
-  host.appendChild(row);
-}
-function clearStopRows(){ document.getElementById("stopRows").innerHTML=""; }
-function saveNewTrip(){
-  const line=document.getElementById("newLine").value.trim();
-  const name=document.getElementById("newName").value.trim();
-  const baseTime=document.getElementById("newBaseTime").value.trim();
-  const sollMin = Number(document.getElementById("newSoll").value.trim() || "10");
-
-  if(!line || !name || !baseTime || !/^\d{2}:\d{2}$/.test(baseTime)){
-    alert("Bitte Linie, Name und baseTime (HH:MM) korrekt ausfüllen.");
-    return;
-  }
-
-  const rows=[...document.querySelectorAll("#stopRows .stopRowEdit")];
-  if(rows.length<2){ alert("Bitte mindestens 2 Haltestellen anlegen."); return; }
-
-  const stops = rows.map(r=>{
-    const inputs=[...r.querySelectorAll("input")].map(i=>i.value.trim());
-    const [n,lat,lon,time] = inputs;
-    return { name:n, lat:Number(lat), lon:Number(lon), time };
-  });
-
-  for(const s of stops){
-    if(!s.name || !Number.isFinite(s.lat) || !Number.isFinite(s.lon) || !/^\d{2}:\d{2}$/.test(s.time)){
-      alert("Bitte bei allen Halten Name + Lat + Lon + Zeit (HH:MM) korrekt eintragen.");
-      return;
-    }
-  }
-
-  const trip={
-    id: uid(),
-    line,
-    sollHeadway: Math.max(60, Math.round(sollMin*60)),
-    baseTime,
-    name,
-    stops
-  };
-
-  trips.push(trip);
-  saveJSON(K_TRIPS, trips);
-  refreshTripSelect();
-  renderWsTrips();
-  renderHaltAnsagen();
-  alert("Fahrt gespeichert ✅");
-}
-
-/* Init Stop Rows */
-addStopRow({name:"Start",lat:"",lon:"",time:"08:00"});
-addStopRow({name:"Ziel",lat:"",lon:"",time:"08:10"});
-
-/* Live Update von Delay/Headway */
+/* ================= Initial UI ================= */
+refreshTrackUI();
+drawTrackForCurrentLine();
+updateDelay();
+updateHeadway();
 setInterval(()=>{ updateDelay(); updateHeadway(); }, 1000);
-updateDelay(); updateHeadway();
 </script>
+
 </body>
 </html>
