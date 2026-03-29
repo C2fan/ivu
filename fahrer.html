@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>IVU Fahreranzeige</title>
 
 <meta name="viewport"
 content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
-<!-- Leaflet -->
-https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
-https://unpkg.com/leaflet@1.9.4/dist/leaflet.jsscript>
+<!-- Leaflet korrekt eingebunden -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 html,body{
@@ -25,7 +25,9 @@ html,body{
   --green:#00FF88;
   --orange:#FFB347;
   --red:#FF4444;
-  --funk:#8B0000;
+  --divider:#222;
+  --panel:#161B22;
+  --muted:#8B949E;
 }
 
 /* HEADER */
@@ -36,97 +38,142 @@ html,body{
   align-items:center;
   padding:0 16px;
   border-bottom:2px solid var(--blue);
-  background:#161B22;
+  background:linear-gradient(90deg,#0D1117,#161B22);
+}
+.leftHeader{
+  display:flex;
+  align-items:center;
+  gap:10px;
 }
 select{
   background:#0D1117;color:#fff;border:1px solid var(--line);
-  padding:6px 10px;border-radius:8px;font-weight:900;
+  padding:8px 10px;border-radius:10px;font-weight:900;
 }
-#delay{font-size:1.6rem;font-weight:900;text-align:right}
-#headway{font-size:1rem;font-weight:900;text-align:right}
-
-/* FUNK BANNER */
-#funkBanner{
-  display:none;background:var(--funk);color:#fff;
-  padding:10px 16px;font-weight:900;letter-spacing:1px;
-  border-bottom:2px solid var(--red);
+.rightHeader{
+  text-align:right;
+  line-height:1.1;
 }
-#funkTimer{float:right}
+#delay{font-size:1.6rem;font-weight:900}
+#headway{font-size:1rem;font-weight:900;color:#ccc}
 
 /* MAIN GRID */
 .main{
   display:grid;
-  grid-template-columns: 32% 8px 1fr;
+  grid-template-columns: 34% 8px 1fr;
   height:calc(100% - 72px);
 }
 
-/* STOPS */
-.stops{padding:12px;overflow:hidden}
+/* STOPS (links) */
+.stops{
+  padding:12px;
+  overflow:hidden;
+}
 .stop{
   display:grid;
   grid-template-columns: 1fr auto auto;
-  gap:10px;padding:8px;border-bottom:1px solid var(--line);
-  font-weight:800;
+  gap:10px;
+  padding:10px 10px;
+  border-bottom:1px solid var(--line);
+  font-weight:850;
+  align-items:center;
 }
-.stop.active{background:rgba(31,111,235,.25)}
-.stop.done{opacity:.45}
-.time{color:#58A6FF}
-.dist{color:#ccc;font-size:.85rem}
+.stop.active{background:rgba(31,111,235,.22);border-radius:12px}
+.stop.done{opacity:.45;text-decoration:line-through}
+.time{color:#58A6FF;font-weight:900}
+.dist{color:#d6d6d6;font-size:.85rem;font-weight:900}
 
 /* DIVIDER */
-.divider{background:#2a2a2a}
+.divider{background:var(--divider)}
 
 /* RIGHT */
-.right{display:grid;grid-template-rows: 1fr 96px}
+.right{
+  display:grid;
+  grid-template-rows: 1fr 92px;
+}
 #map{width:100%;height:100%}
 
 /* CONTROLS */
 .controls{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:10px;padding:10px;background:#161B22;border-top:1px solid var(--line);
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  padding:10px;
+  background:var(--panel);
+  border-top:1px solid var(--line);
 }
 .btn{
-  border:none;border-radius:14px;padding:14px;
-  font-weight:900;font-size:1.05rem;background:var(--blue);color:#000;
+  border:none;
+  border-radius:14px;
+  padding:14px;
+  font-weight:900;
+  font-size:1.05rem;
+  background:linear-gradient(135deg,var(--blue),#58A6FF);
+  color:#0B1220;
+}
+.btn.ghost{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  color:#fff;
 }
 
-/* OVERLAY */
+/* OVERLAY (Werkstatt) */
 #overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.85);
   display:none;z-index:9999;
 }
 #panel{
-  width:90%;height:90%;margin:auto;background:#0D1117;
+  width:92%;height:92%;margin:auto;background:#0D1117;
   border-radius:18px;border:2px solid var(--blue);
   display:flex;flex-direction:column;
 }
 #panel header{
-  padding:12px;background:#161B22;font-weight:900;
-  display:flex;justify-content:space-between;
+  padding:12px 14px;background:#161B22;font-weight:900;
+  display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--line);
 }
-#panel nav{display:flex;gap:8px;padding:8px}
+#panel header button{
+  border:none;border-radius:10px;padding:8px 12px;font-weight:900;
+  background:rgba(255,255,255,.08);color:#fff;
+}
+#panel nav{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--line)}
 #panel nav button{
   padding:8px 14px;border-radius:10px;border:none;
-  font-weight:900;background:var(--blue);
+  font-weight:900;background:linear-gradient(135deg,var(--blue),#58A6FF);color:#0B1220;
 }
 .tab{display:none;flex:1;overflow:auto;padding:12px}
 .tab.active{display:block}
+.wsHint{color:var(--muted);font-weight:800;margin-bottom:10px}
+
+.wsList{display:flex;flex-direction:column;gap:10px}
+.wsItem{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px;
+  background:rgba(255,255,255,.03);
+}
+.wsItemRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.wsTitle{font-weight:900}
+.wsSmall{color:var(--muted);font-weight:800;font-size:.9rem}
+.wsActions{display:flex;gap:8px;flex-wrap:wrap}
+.wsBtn{
+  border:none;border-radius:10px;padding:8px 10px;font-weight:900;
+  background:rgba(255,255,255,.08);color:#fff;
+}
+.wsBtn.primary{background:linear-gradient(135deg,var(--blue),#58A6FF);color:#0B1220}
+.wsBtn.danger{background:var(--red);color:#0B1220}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <select id="tripSelect" onchange="selectTrip(this.value)"></select>
-  <div>
+  <div class="leftHeader">
+    <select id="tripSelect" onchange="selectTrip(this.value)"></select>
+  </div>
+  <div class="rightHeader">
     <div id="delay">+00:00</div>
     <div id="headway">HW --:-- / --:--</div>
   </div>
-</div>
-
-<div id="funkBanner">
-  <span id="funkText">FUNKANWEISUNG</span>
-  <span id="funkTimer"></span>
 </div>
 
 <div class="main">
@@ -136,197 +183,404 @@ select{
   <div class="right">
     <div id="map"></div>
     <div class="controls">
-      <button class="btn" onclick="gpsStart()">📍 GPS</button>
-      <button class="btn" onclick="prevStop()">◀</button>
-      <button class="btn" onclick="nextStop()">▶</button>
+      <button class="btn" id="gpsBtn" onclick="gpsStart()">📍 GPS</button>
+      <button class="btn ghost" onclick="prevStop()">◀</button>
+      <button class="btn ghost" onclick="nextStop()">▶</button>
       <button class="btn" onclick="openWorkshop()">🔧</button>
     </div>
   </div>
 </div>
 
-<!-- WERKSTATT -->
+<!-- WERKSTATT OVERLAY (ohne Dispo) -->
 <div id="overlay">
   <div id="panel">
     <header>
       <div>🔧 Werkstatt</div>
       <button onclick="closeWorkshop()">✖</button>
     </header>
+
     <nav>
       <button onclick="openTab('trips')">Fahrten</button>
       <button onclick="openTab('sonder')">Sonderansagen</button>
-      <button onclick="openTab('funk')">📻 Funk‑Dispo</button>
     </nav>
 
     <div id="tab-trips" class="tab">
-      <h3>Fahrt wählen</h3>
-      <ul id="wsTrips"></ul>
+      <div class="wsHint">Hier kannst du die aktive Fahrt setzen.</div>
+      <div class="wsList" id="wsTrips"></div>
     </div>
 
     <div id="tab-sonder" class="tab">
-      <h3>Sonderansagen</h3>
-      <div id="sonderSlots"></div>
-    </div>
-
-    <div id="tab-funk" class="tab">
-      <h3>📻 Funk‑Disposition</h3>
-      <button onclick="sendFunkText()">📢 Text senden</button>
-      <button onclick="sendHold()">⏸️ Halt anweisen</button>
-      <button onclick="sendGo()">▶ Weiterfahren</button>
-      <button onclick="sendSkip()">⏭ Halt überspringen</button>
-      <hr>
-      <label>Springe zu Halt:</label>
-      <select id="jumpSelect"></select>
-      <button onclick="sendJump()">🔁 Setzen</button>
+      <div class="wsHint">4 Slots – Upload/Play/Leeren. Wird im Browser gespeichert (LocalStorage).</div>
+      <div class="wsList" id="sonderSlots"></div>
     </div>
   </div>
 </div>
 
 <script>
-/* ================= DATEN ================= */
+/* ================= Konfiguration ================= */
+// Werkstatt PIN:
+const WORKSHOP_PIN = "2580";
+
+// Auto-Vorschaltung:
+const LEAVE_RADIUS = 500;        // m
+const SWITCH_COOLDOWN_MS = 15000; // 15s
+let lastDist = null;
+let lastSwitch = 0;
+
+/* ================= Fahrten (Beispiel) ================= */
 const trips=[
-{
-  line:"Linie 1", sollHeadway:600, baseTime:"08:00",
-  name:"Linie 1 → Hbf (08:00)",
-  stops:[
-    {name:"Depot",lat:52.5208,lon:13.4095,time:"08:00"},
-    {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:05"},
-    {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:10"},
-    {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:15"}
-  ]
-},
-{
-  line:"Linie 1", sollHeadway:600, baseTime:"08:10",
-  name:"Linie 1 → Hbf (08:10)",
-  stops:[
-    {name:"Depot",lat:52.5208,lon:13.4095,time:"08:10"},
-    {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:15"},
-    {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:20"},
-    {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:25"}
-  ]
-}
+  {
+    line:"Linie 1", sollHeadway:600, baseTime:"08:00",
+    name:"Linie 1 → Hbf (08:00)",
+    stops:[
+      {name:"Depot",lat:52.5208,lon:13.4095,time:"08:00"},
+      {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:05"},
+      {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:10"},
+      {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:15"}
+    ]
+  },
+  {
+    line:"Linie 1", sollHeadway:600, baseTime:"08:10",
+    name:"Linie 1 → Hbf (08:10)",
+    stops:[
+      {name:"Depot",lat:52.5208,lon:13.4095,time:"08:10"},
+      {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:15"},
+      {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:20"},
+      {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:25"}
+    ]
+  },
+  {
+    line:"Linie 2", sollHeadway:900, baseTime:"09:00",
+    name:"Linie 2 → Zentrum (09:00)",
+    stops:[
+      {name:"Betriebshof",lat:52.5188,lon:13.4050,time:"09:00"},
+      {name:"Schule",lat:52.5199,lon:13.4070,time:"09:04"},
+      {name:"Zentrum",lat:52.5212,lon:13.4090,time:"09:08"}
+    ]
+  }
 ];
 
-let tripIndex=0, stopIndex=0, currentPos=null;
+let tripIndex=0;
+let stopIndex=0;
+let currentPos=null;
+let gpsWatchId=null;
 
-/* ================= MAP ================= */
-const map=L.map("map",{zoomControl:false,dragging:false}).setView([52.52,13.41],16);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-const marker=L.circleMarker([52.52,13.41],{radius:8,color:"#1F6FEB",fillOpacity:1}).addTo(map);
+/* ================= Leaflet Map ================= */
+const map=L.map("map",{
+  zoomControl:false,
+  dragging:false,
+  scrollWheelZoom:false,
+  doubleClickZoom:false,
+  boxZoom:false,
+  keyboard:false,
+  tap:false
+}).setView([trips[0].stops[0].lat,trips[0].stops[0].lon],16);
 
-/* ================= INIT ================= */
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map);
+
+const marker=L.circleMarker([trips[0].stops[0].lat,trips[0].stops[0].lon],{
+  radius:8,color:"#1F6FEB",fillColor:"#58A6FF",fillOpacity:1
+}).addTo(map);
+
+/* ================= UI: Trips Select ================= */
 const tripSelect=document.getElementById("tripSelect");
-trips.forEach((t,i)=>{const o=document.createElement("option");o.value=i;o.textContent=t.name;tripSelect.appendChild(o);});
-renderStops(); updateDelay(); updateHeadway();
+trips.forEach((t,i)=>{
+  const o=document.createElement("option");
+  o.value=i;
+  o.textContent=t.name;
+  tripSelect.appendChild(o);
+});
 
-/* ================= GPS ================= */
-function gpsStart(){
-  navigator.geolocation.watchPosition(p=>{
-    currentPos={lat:p.coords.latitude,lon:p.coords.longitude};
-    marker.setLatLng([currentPos.lat,currentPos.lon]);
-    map.setView([currentPos.lat,currentPos.lon],map.getZoom(),{animate:true});
-    renderStops(); updateDelay(); updateHeadway(); autoAdvance();
-  },()=>{}, {enableHighAccuracy:true,maximumAge:1000});
-}
-
-/* ================= UTILS ================= */
+/* ================= Utils ================= */
 function hav(a,b){
   const R=6371000;
-  const dLat=(b.lat-a.lat)*Math.PI/180, dLon=(b.lon-a.lon)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLon=(b.lon-a.lon)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*
+    Math.sin(dLon/2)**2;
   return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-function timeToSec(t){const [h,m]=t.split(":").map(Number);return h*3600+m*60}
+function timeToSec(t){
+  const [h,m]=t.split(":").map(Number);
+  return h*3600 + m*60;
+}
+function fmtMMSS(sec){
+  const a=Math.abs(sec);
+  const mm=String(Math.floor(a/60)).padStart(2,"0");
+  const ss=String(a%60).padStart(2,"0");
+  return `${sec>=0?"+":"-"}${mm}:${ss}`;
+}
 
-/* ================= AUTO HALT ================= */
-const LEAVE_RADIUS=500; let lastDist=null,lastSwitch=0;
+/* ================= Stops Render ================= */
+function renderStops(){
+  const list=document.getElementById("stopList");
+  list.innerHTML="";
+  const t=trips[tripIndex];
+
+  t.stops.forEach((s,i)=>{
+    let dist="–";
+    if(currentPos){
+      dist = Math.round(hav(currentPos, s))+" m";
+    }
+    const row=document.createElement("div");
+    row.className="stop"+(i===stopIndex?" active":"")+(i<stopIndex?" done":"");
+    row.innerHTML=`
+      <div>${s.name}</div>
+      <div class="time">${s.time}</div>
+      <div class="dist">${dist}</div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+/* ================= Delay ================= */
+function getCurrentDelaySec(){
+  const t=trips[tripIndex];
+  const plan = timeToSec(t.stops[stopIndex].time);
+  const n=new Date();
+  const now = n.getHours()*3600 + n.getMinutes()*60 + n.getSeconds();
+  return now - plan;
+}
+function updateDelay(){
+  const diff=getCurrentDelaySec();
+  const a=Math.abs(diff);
+  const el=document.getElementById("delay");
+  el.textContent = fmtMMSS(diff);
+  el.style.color = a<60 ? "var(--green)" : a<180 ? "var(--orange)" : "var(--red)";
+}
+
+/* ================= Headway IST / SOLL ================= */
+function updateHeadway(){
+  const cur=trips[tripIndex];
+  const same=trips.map((t,i)=>({...t,index:i}))
+    .filter(t=>t.line===cur.line)
+    .sort((a,b)=>timeToSec(a.baseTime)-timeToSec(b.baseTime));
+  const pos=same.findIndex(x=>x.index===tripIndex);
+  const el=document.getElementById("headway");
+  if(pos<=0){
+    el.textContent="HW --:-- / --:--";
+    el.style.color="#ccc";
+    return;
+  }
+  const prev=same[pos-1];
+
+  const ist = (timeToSec(cur.baseTime) + getCurrentDelaySec()) - timeToSec(prev.baseTime);
+  const soll = cur.sollHeadway;
+
+  const mmIst=String(Math.floor(ist/60)).padStart(2,"0");
+  const ssIst=String(Math.abs(ist%60)).padStart(2,"0");
+  const mmSoll=String(Math.floor(soll/60)).padStart(2,"0");
+  const ssSoll=String(soll%60).padStart(2,"0");
+
+  el.textContent = `HW ${mmIst}:${ssIst} / ${mmSoll}:${ssSoll}`;
+
+  const ratio = ist / soll;
+  el.style.color = ratio>=1 ? "var(--green)" : ratio>=0.7 ? "var(--orange)" : "var(--red)";
+}
+
+/* ================= Auto-Vorschaltung ================= */
 function autoAdvance(){
-  const s=trips[tripIndex].stops[stopIndex];
-  if(!currentPos||!s) return;
-  const d=hav(currentPos,s);
-  if(d>LEAVE_RADIUS && lastDist!==null && d>lastDist+20 && Date.now()-lastSwitch>15000){
-    if(stopIndex<trips[tripIndex].stops.length-1){
-      stopIndex++; lastSwitch=Date.now();
-      renderStops(); updateDelay(); updateHeadway();
+  const t=trips[tripIndex];
+  const s=t.stops[stopIndex];
+  if(!currentPos || !s) return;
+
+  const d=hav(currentPos, s);
+
+  // Richtung + Radius + Cooldown
+  if(d > LEAVE_RADIUS && lastDist !== null && d > lastDist + 20 && (Date.now()-lastSwitch) > SWITCH_COOLDOWN_MS){
+    if(stopIndex < t.stops.length-1){
+      stopIndex++;
+      lastSwitch=Date.now();
+      lastDist=null;
+      renderStops();
+      updateDelay();
+      updateHeadway();
+      return;
     }
   }
+
   lastDist=d;
 }
 
-/* ================= STOPS ================= */
-function renderStops(){
-  stopList.innerHTML="";
-  trips[tripIndex].stops.forEach((s,i)=>{
-    let dist="–"; if(currentPos) dist=Math.round(hav(currentPos,s))+" m";
-    const d=document.createElement("div");
-    d.className="stop"+(i===stopIndex?" active":"")+(i<stopIndex?" done":"");
-    d.innerHTML=`<div>${s.name}</div><div class="time">${s.time}</div><div class="dist">${dist}</div>`;
-    stopList.appendChild(d);
+/* ================= GPS ================= */
+function gpsStart(){
+  if(!navigator.geolocation){
+    alert("GPS nicht verfügbar");
+    return;
+  }
+  if(gpsWatchId){
+    alert("GPS läuft bereits");
+    return;
+  }
+  document.getElementById("gpsBtn").textContent="📍 GPS läuft";
+
+  gpsWatchId = navigator.geolocation.watchPosition((p)=>{
+    currentPos={lat:p.coords.latitude, lon:p.coords.longitude};
+    marker.setLatLng([currentPos.lat, currentPos.lon]);
+    map.setView([currentPos.lat, currentPos.lon], map.getZoom(), {animate:true, duration:0.5});
+
+    renderStops();
+    updateDelay();
+    updateHeadway();
+    autoAdvance();
+  }, ()=>{
+    alert("GPS Zugriff fehlgeschlagen (HTTPS nötig)");
+  }, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
+}
+
+/* ================= Buttons ================= */
+function nextStop(){
+  const t=trips[tripIndex];
+  if(stopIndex < t.stops.length-1){
+    stopIndex++;
+    renderStops();
+    updateDelay();
+    updateHeadway();
+  }
+}
+function prevStop(){
+  if(stopIndex>0){
+    stopIndex--;
+    renderStops();
+    updateDelay();
+    updateHeadway();
+  }
+}
+function selectTrip(i){
+  tripIndex=+i;
+  stopIndex=0;
+  lastDist=null;
+  lastSwitch=0;
+  renderStops();
+  updateDelay();
+  updateHeadway();
+  renderJumpSelect(); // falls Overlay offen
+}
+
+/* ================= Werkstatt Overlay ================= */
+function openWorkshop(){
+  const pin=prompt("Werkstatt PIN:");
+  if(pin !== WORKSHOP_PIN) return;
+
+  document.getElementById("overlay").style.display="flex";
+  openTab("trips");
+  renderWsTrips();
+  renderSonder();
+}
+function closeWorkshop(){
+  document.getElementById("overlay").style.display="none";
+}
+function openTab(id){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+id).classList.add("active");
+}
+
+/* Fahrten Liste im Overlay */
+function renderWsTrips(){
+  const box=document.getElementById("wsTrips");
+  box.innerHTML="";
+  trips.forEach((t,i)=>{
+    const item=document.createElement("div");
+    item.className="wsItem";
+    item.innerHTML=`
+      <div class="wsItemRow">
+        <div>
+          <div class="wsTitle">${t.name}</div>
+          <div class="wsSmall">Linie: ${t.line} · Soll HW: ${Math.floor(t.sollHeadway/60)} min</div>
+        </div>
+        <div class="wsActions">
+          <button class="wsBtn primary" onclick="selectTrip(${i});closeWorkshop()">Aktiv setzen</button>
+        </div>
+      </div>
+    `;
+    box.appendChild(item);
   });
 }
 
-/* ================= DELAY ================= */
-function getCurrentDelaySec(){
-  const plan=timeToSec(trips[tripIndex].stops[stopIndex].time);
-  const n=new Date(); const now=n.getHours()*3600+n.getMinutes()*60+n.getSeconds();
-  return now-plan;
-}
-function updateDelay(){
-  const diff=getCurrentDelaySec(), a=Math.abs(diff);
-  delay.textContent=`${diff>=0?"+":"-"}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;
-  delay.style.color=a<60?"var(--green)":a<180?"var(--orange)":"var(--red)";
-}
+/* ================= Sonderansagen (persistent) ================= */
+const K_SONDER="ivu_sonder_v1";
+let sonderSlots = loadSonder();
 
-/* ================= HEADWAY IST / SOLL ================= */
-function updateHeadway(){
-  const cur=trips[tripIndex];
-  const same=trips.map((t,i)=>({...t,index:i})).filter(t=>t.line===cur.line)
-    .sort((a,b)=>timeToSec(a.baseTime)-timeToSec(b.baseTime));
-  const pos=same.findIndex(t=>t.index===tripIndex);
-  if(pos<=0){headway.textContent="HW --:-- / --:--";return}
-  const prev=same[pos-1];
-  const ist=(timeToSec(cur.baseTime)+getCurrentDelaySec())-timeToSec(prev.baseTime);
-  const soll=cur.sollHeadway;
-  headway.textContent=`HW ${String(Math.floor(ist/60)).padStart(2,"0")}:${String(ist%60).padStart(2,"0")} / ${String(Math.floor(soll/60)).padStart(2,"0")}:00`;
-  const r=ist/soll;
-  headway.style.color=r>=1?"var(--green)":r>=0.7?"var(--orange)":"var(--red)";
+function loadSonder(){
+  try{
+    const v=localStorage.getItem(K_SONDER);
+    if(v) return JSON.parse(v);
+  }catch{}
+  return [null,null,null,null];
+}
+function saveSonder(){
+  localStorage.setItem(K_SONDER, JSON.stringify(sonderSlots));
 }
 
-/* ================= BUTTONS ================= */
-function nextStop(){if(!(funk.active&&funk.type==="hold")&&stopIndex<trips[tripIndex].stops.length-1){stopIndex++;renderStops();updateDelay();updateHeadway();}}
-function prevStop(){if(stopIndex>0){stopIndex--;renderStops();updateDelay();updateHeadway();}}
-function selectTrip(i){tripIndex=+i;stopIndex=0;renderStops();updateDelay();updateHeadway();}
-
-/* ================= WERKSTATT ================= */
-function openWorkshop(){const pin=prompt("PIN?"); if(pin==="2580"){overlay.style.display="flex";openTab('trips');renderWsTrips();renderSonder();renderJumpSelect();}}
-function closeWorkshop(){overlay.style.display="none"}
-function openTab(n){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));document.getElementById("tab-"+n).classList.add("active");}
-function renderWsTrips(){wsTrips.innerHTML="";trips.forEach((t,i)=>{const li=document.createElement("li");li.textContent=t.name;li.onclick=()=>{selectTrip(i);closeWorkshop()};wsTrips.appendChild(li);});}
-
-/* ================= SONDERANSAGEN ================= */
-const sonderSlots=[null,null,null,null];
 function renderSonder(){
-  sonderSlotsDiv=document.getElementById("sonderSlots"); sonderSlotsDiv.innerHTML="";
-  sonderSlots.forEach((s,i)=>{
-    const d=document.createElement("div");
-    d.innerHTML=`Slot ${i+1} <input type="file" accept="audio/*" onchange="uploadSonder(event,${i})">
-                 <button onclick="playSonder(${i})">▶</button>`;
-    sonderSlotsDiv.appendChild(d);
-  });
-}
-function uploadSonder(e,i){const r=new FileReader();r.onload=()=>sonderSlots[i]=r.result;r.readAsDataURL(e.target.files[0]);}
-function playSonder(i){if(sonderSlots[i]) new Audio(sonderSlots[i]).play();}
+  const box=document.getElementById("sonderSlots");
+  box.innerHTML="";
 
-/* ================= FUNK DISPO ================= */
-let funk={active:false,type:null,until:null};
-function showFunk(t){funkBanner.style.display="block";funkText.textContent=t;}
-function clearFunk(){funkBanner.style.display="none";funkTimer.textContent="";funk={active:false,type:null,until:null};}
-function sendFunkText(){const t=prompt("Funkanweisung");if(!t)return;funk.active=true;funk.type="text";showFunk("📢 "+t);}
-function sendHold(){const m=prompt("Warten (Min)","2");if(!m)return;funk.active=true;funk.type="hold";funk.until=Date.now()+m*60000;showFunk("⏸️ WARTEN");}
-function sendGo(){clearFunk();}
-function sendSkip(){clearFunk(); if(stopIndex<trips[tripIndex].stops.length-1){stopIndex++;renderStops();updateDelay();updateHeadway();}}
-function renderJumpSelect(){jumpSelect.innerHTML="";trips[tripIndex].stops.forEach((s,i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${i+1}. ${s.name}`;jumpSelect.appendChild(o);});}
-function sendJump(){const i=+jumpSelect.value;clearFunk();if(i>=0){stopIndex=i;renderStops();updateDelay();updateHeadway();}}
-setInterval(()=>{if(funk.active&&funk.type==="hold"){const r=Math.max(0,Math.floor((funk.until-Date.now())/1000));funkTimer.textContent=`WARTEN ${String(Math.floor(r/60)).padStart(2,"0")}:${String(r%60).padStart(2,"0")}`; if(r<=0) clearFunk();}},1000);
+  for(let i=0;i<4;i++){
+    const data = sonderSlots[i];
+    const item=document.createElement("div");
+    item.className="wsItem";
+
+    item.innerHTML=`
+      <div class="wsItemRow">
+        <div>
+          <div class="wsTitle">Sonderansage ${i+1}</div>
+          <div class="wsSmall">${data ? "Datei gespeichert" : "leer"}</div>
+        </div>
+        <div class="wsActions">
+          <button class="wsBtn primary" onclick="uploadSonder(${i})">Upload</button>
+          <button class="wsBtn" onclick="playSonder(${i})" ${data? "" : "disabled"}>Play</button>
+          <button class="wsBtn danger" onclick="clearSonder(${i})" ${data? "" : "disabled"}>Leeren</button>
+        </div>
+      </div>
+    `;
+    box.appendChild(item);
+  }
+}
+
+function uploadSonder(i){
+  const input=document.createElement("input");
+  input.type="file";
+  input.accept="audio/*";
+  input.onchange=(e)=>{
+    const file=e.target.files[0];
+    if(!file) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      sonderSlots[i]=r.result;
+      saveSonder();
+      renderSonder();
+    };
+    r.readAsDataURL(file);
+  };
+  input.click();
+}
+function playSonder(i){
+  const data=sonderSlots[i];
+  if(!data) return;
+  const a=new Audio(data);
+  a.play().catch(()=>alert("Audio konnte nicht abgespielt werden."));
+}
+function clearSonder(i){
+  sonderSlots[i]=null;
+  saveSonder();
+  renderSonder();
+}
+
+/* Dummy, falls du später Jump brauchst */
+function renderJumpSelect(){}
+
+/* ================= Init ================= */
+renderStops();
+updateDelay();
+updateHeadway();
+
+// Delay/Headway live aktualisieren (auch ohne GPS)
+setInterval(()=>{
+  updateDelay();
+  updateHeadway();
+}, 1000);
 </script>
 
 </body>
