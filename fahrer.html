@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>IVU Fahrer</title>
 
 <!-- Leaflet -->
@@ -10,152 +10,194 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-/* ===== BASIS ===== */
-body{margin:0;font-family:Segoe UI,Arial;background:#0D1117;color:#fff;overflow:hidden}
-.header{height:80px;background:#161B22;border-bottom:2px solid #1F6FEB;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:relative}
-#statusBox{padding:10px 16px;border-radius:10px;background:#444;font-weight:900}
-#simBanner{position:absolute;top:80px;left:0;right:0;height:40px;background:#FFB347;color:#000;font-weight:900;display:none;align-items:center;justify-content:center;z-index:9999}
+:root{
+  --bg:#0D1117; --panel:#161B22; --line:#30363D;
+  --blue:#1F6FEB; --blue2:#58A6FF; --warn:#FFB347;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:#fff;
+  font-family:Segoe UI,Arial,sans-serif;overflow:hidden;
+}
 
-.main{display:flex;height:calc(100vh - 80px)}
-.buttons{width:30%;background:#161B22;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.btn{background:#1F6FEB;border:none;border-radius:14px;color:#0B1220;font-weight:900;font-size:1.1rem;padding:18px;cursor:pointer}
-.right{flex:1;display:flex;flex-direction:column}
-#map{height:300px;border-bottom:1px solid #30363D}
-#info{padding:10px;font-weight:900;background:#0D1117;border-bottom:1px solid #30363D}
-#stops{flex:1;overflow:auto;padding:10px}
-.stop{padding:8px;border-bottom:1px solid #30363D}
-.stop.active{background:rgba(31,111,235,0.25)}
+/* ===== PIN LOCK ===== */
+#pinLock{
+  position:fixed;inset:0;background:#000;z-index:100000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+#pinDisplay{
+  letter-spacing:8px;font-size:2rem;margin-bottom:20px;
+}
+.pinPad{
+  display:grid;grid-template-columns:repeat(3,80px);gap:14px;
+}
+.pinBtn{
+  height:70px;border-radius:14px;border:none;
+  background:#1F6FEB;color:#000;font-size:1.5rem;font-weight:900;
+}
+.pinBtn.clear{background:#FF4444;color:#000}
 
-#kpiMini{font-size:.9rem;color:#58A6FF}
+/* ===== HEADER ===== */
+.header{
+  height:80px;background:var(--panel);
+  border-bottom:2px solid var(--blue);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;position:relative;
+}
+#title{font-size:1.4rem;font-weight:900}
+#kpiMini{font-size:.9rem;color:var(--blue2)}
 #kpiSpark{width:120px;height:26px;background:rgba(255,255,255,.05);border-radius:6px}
+#statusBox{padding:8px 14px;border-radius:10px;background:#444;font-weight:900}
 
-/* ===== OVERLAY ===== */
-#overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;z-index:99999}
-#panel{width:92%;height:92%;margin:auto;background:#0D1117;border-radius:16px;border:2px solid #1F6FEB;display:flex;flex-direction:column}
-#panel header{padding:14px;font-weight:900;background:#161B22;display:flex;justify-content:space-between}
-#panel nav{display:flex;gap:8px;padding:10px}
-#panel nav button{padding:8px 14px;border-radius:10px;border:none;font-weight:900;background:#1F6FEB}
-.tab{display:none;flex:1;overflow:auto;padding:14px}
-.tab.active{display:block}
+/* ===== SIM BANNER ===== */
+#simBanner{
+  position:absolute;top:80px;left:0;right:0;height:36px;
+  background:var(--warn);color:#000;font-weight:900;
+  display:none;align-items:center;justify-content:center;z-index:9999;
+}
 
-canvas{max-width:100%}
+/* ===== MAIN ===== */
+.main{display:flex;height:calc(100vh - 80px)}
+.controls{
+  width:28%;background:var(--panel);padding:18px;
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.ctrlBtn{
+  padding:18px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#000;font-size:1.1rem;font-weight:900;
+}
+.content{flex:1;display:flex;flex-direction:column}
+#map{flex:1}
+#info{
+  padding:10px;background:var(--bg);
+  border-top:1px solid var(--line);font-weight:900;
+}
+#stops{overflow:auto;max-height:220px}
+.stop{padding:8px;border-bottom:1px solid var(--line)}
+.stop.active{background:rgba(31,111,235,.25)}
 </style>
 </head>
 
 <body>
 
+<!-- ===== PIN LOCK ===== -->
+<div id="pinLock">
+  <div id="pinDisplay">◻ ◻ ◻ ◻</div>
+  <div class="pinPad">
+    <button class="pinBtn" onclick="pinPress('1')">1</button>
+    <button class="pinBtn" onclick="pinPress('2')">2</button>
+    <button class="pinBtn" onclick="pinPress('3')">3</button>
+    <button class="pinBtn" onclick="pinPress('4')">4</button>
+    <button class="pinBtn" onclick="pinPress('5')">5</button>
+    <button class="pinBtn" onclick="pinPress('6')">6</button>
+    <button class="pinBtn" onclick="pinPress('7')">7</button>
+    <button class="pinBtn" onclick="pinPress('8')">8</button>
+    <button class="pinBtn" onclick="pinPress('9')">9</button>
+    <button class="pinBtn clear" onclick="pinClear()">✖</button>
+    <button class="pinBtn" onclick="pinPress('0')">0</button>
+    <button class="pinBtn" onclick="pinSubmit()">✔</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
 <div class="header">
   <div>
-    <div id="line">IVU Fahrer</div>
-    <div id="kpiMini">
-      <span id="kpiKm">0.0 km</span> ·
-      <span id="kpiStops">0 Stops</span>
-    </div>
+    <div id="title">IVU Fahrer</div>
+    <div id="kpiMini"><span id="kpiKm">0.0 km</span> · <span id="kpiStops">0 Stops</span></div>
   </div>
   <canvas id="kpiSpark"></canvas>
   <div id="statusBox">--</div>
 </div>
 
-<div id="simBanner">🧪 SIMULATIONSMODUS AKTIV</div>
+<div id="simBanner">🧪 SIMULATIONSMODUS</div>
 
 <div class="main">
-  <div class="buttons">
-    <button class="btn" onclick="gpsStart()">📍 GPS</button>
-    <button class="btn" onclick="simStart()">🧪 SIM</button>
-    <button class="btn" onclick="prev()">◀</button>
-    <button class="btn" onclick="next()">▶</button>
-    <button class="btn" onclick="openOverlay()">🔧</button>
+  <div class="controls">
+    <button class="ctrlBtn" onclick="gpsStart()">📍 GPS</button>
+    <button class="ctrlBtn" onclick="simStart()">🧪 SIM</button>
+    <button class="ctrlBtn" onclick="prevStop()">◀ Halt</button>
+    <button class="ctrlBtn" onclick="nextStop()">Halt ▶</button>
   </div>
-  <div class="right">
+  <div class="content">
     <div id="map"></div>
     <div id="info">Nächster Halt: <span id="nextName">–</span></div>
     <div id="stops"></div>
   </div>
 </div>
 
-<!-- ===== WERKSTATT OVERLAY ===== -->
-<div id="overlay">
-  <div id="panel">
-    <header>
-      <div>🔧 Werkstatt</div>
-      <button onclick="closeOverlay()">✖</button>
-    </header>
-    <nav>
-      <button onclick="openTab('kpi')">KPI</button>
-      <button onclick="openTab('sim')">Simulation</button>
-    </nav>
-
-    <div id="tab-kpi" class="tab">
-      <h3>KPI Grafiken</h3>
-      <canvas id="chartKm" height="120"></canvas>
-      <canvas id="chartStops" height="120"></canvas>
-    </div>
-
-    <div id="tab-sim" class="tab">
-      <h3>Simulation</h3>
-      <button onclick="simStart()">▶ Start</button>
-      <button onclick="simStop()">⏹ Stop</button>
-    </div>
-  </div>
-</div>
-
 <script>
-/* ===== DEMO-DATEN ===== */
-let trips=[{linie:"Linie 1",stops:[
- {name:"Depot",lat:52.52,lon:13.40},
- {name:"Markt",lat:52.521,lon:13.405},
- {name:"Bahnhof",lat:52.522,lon:13.41}
-]}];
-let tripIndex=0,stopIndex=0;
+/* ===== PIN ===== */
+const PIN="2580"; let pin="";
+function pinPress(d){ if(pin.length<4){ pin+=d; updatePin(); } }
+function pinClear(){ pin=""; updatePin(); }
+function pinSubmit(){
+  if(pin===PIN){ document.getElementById("pinLock").style.display="none"; }
+  else{ pinClear(); alert("Falsche PIN"); }
+}
+function updatePin(){
+  pinDisplay.textContent = pin.padEnd(4,"◻").split("").join(" ");
+}
+
+/* ===== DATA ===== */
+const trip={
+  stops:[
+    {name:"Depot",lat:52.52,lon:13.40},
+    {name:"Marktplatz",lat:52.521,lon:13.405},
+    {name:"Bahnhof",lat:52.522,lon:13.41}
+  ]
+};
+let stopIndex=0;
 
 /* ===== MAP ===== */
-let map=L.map("map").setView([52.52,13.4],15);
+const map=L.map("map",{zoomControl:false}).setView([52.52,13.4],16);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-let marker=L.circleMarker([52.52,13.4],{radius:8,color:"#1F6FEB"}).addTo(map);
+const marker=L.circleMarker([52.52,13.4],{radius:8,color:"#1F6FEB"}).addTo(map);
 
-/* ===== KPI ===== */
-let kpi={km:0,stops:0,last:null,series:[]};
-function kpiTick(){
-  if(!currentPos)return;
-  if(kpi.last){
-    const d=haversine(currentPos,kpi.last);
-    if(d<200)kpi.km+=d/1000;
-  }
-  kpi.last={...currentPos};
-  kpi.series.push(kpi.km);
-  if(kpi.series.length>30)kpi.series.shift();
-  renderKpi();
+function follow(pos){
+  marker.setLatLng([pos.lat,pos.lon]);
+  map.panTo([pos.lat,pos.lon],{animate:true,duration:.5});
 }
-setInterval(kpiTick,1000);
 
-/* ===== RENDER ===== */
+/* ===== STOPS ===== */
 function renderStops(){
   stops.innerHTML="";
-  trips[tripIndex].stops.forEach((s,i)=>{
+  trip.stops.forEach((s,i)=>{
     const d=document.createElement("div");
     d.className="stop"+(i===stopIndex?" active":"");
     d.textContent=(i+1)+". "+s.name;
     stops.appendChild(d);
   });
-  nextName.textContent=trips[tripIndex].stops[stopIndex].name;
+  nextName.textContent=trip.stops[stopIndex].name;
 }
 renderStops();
 
-function renderKpi(){
-  kpiKm.textContent=kpi.km.toFixed(1)+" km";
-  kpiStops.textContent=kpi.stops+" Stops";
+/* ===== KPI ===== */
+let kpiKmVal=0,kpiStopsVal=0,lastPos=null,series=[];
+function hav(a,b){
+  const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function kpiTick(pos){
+  if(lastPos){
+    const d=hav(pos,lastPos);
+    if(d<200) kpiKmVal+=d/1000;
+  }
+  lastPos={...pos};
+  series.push(kpiKmVal); if(series.length>30)series.shift();
+  kpiKm.textContent=kpiKmVal.toFixed(1)+" km";
+  kpiStops.textContent=kpiStopsVal+" Stops";
   drawSpark();
 }
-
-/* ===== SPARKLINE ===== */
 function drawSpark(){
   const c=kpiSpark,ctx=c.getContext("2d");
   ctx.clearRect(0,0,c.width,c.height);
-  if(kpi.series.length<2)return;
-  const min=Math.min(...kpi.series),max=Math.max(...kpi.series)||1;
+  if(series.length<2)return;
+  const min=Math.min(...series),max=Math.max(...series)||1;
   ctx.strokeStyle="#58A6FF";ctx.beginPath();
-  kpi.series.forEach((v,i)=>{
-    const x=i*(c.width/(kpi.series.length-1));
+  series.forEach((v,i)=>{
+    const x=i*(c.width/(series.length-1));
     const y=c.height-((v-min)/(max-min||1))*c.height;
     i?ctx.lineTo(x,y):ctx.moveTo(x,y);
   });
@@ -163,55 +205,39 @@ function drawSpark(){
 }
 
 /* ===== GPS / SIM ===== */
-let currentPos=null,sim=false,simTimer=null;
+let simTimer=null;
 function gpsStart(){
   simStop();
   navigator.geolocation.watchPosition(p=>{
-    currentPos={lat:p.coords.latitude,lon:p.coords.longitude};
-    marker.setLatLng([currentPos.lat,currentPos.lon]);
+    const pos={lat:p.coords.latitude,lon:p.coords.longitude};
+    follow(pos); kpiTick(pos); autoAdvance(pos);
   });
 }
 function simStart(){
-  sim=true;
   simBanner.style.display="flex";
   let i=0;
   simTimer=setInterval(()=>{
-    const s=trips[0].stops[Math.min(i,trips[0].stops.length-1)];
-    currentPos={lat:s.lat,lon:s.lon};
-    marker.setLatLng([s.lat,s.lon]);
+    const s=trip.stops[Math.min(i,trip.stops.length-1)];
+    const pos={lat:s.lat,lon:s.lon};
+    follow(pos); kpiTick(pos); autoAdvance(pos);
     i++;
   },2000);
 }
 function simStop(){
-  sim=false;
   clearInterval(simTimer);
   simBanner.style.display="none";
 }
 
-/* ===== AUTO STOP ===== */
-function next(){
-  if(stopIndex<trips[0].stops.length-1){
-    stopIndex++;kpi.stops++;renderStops();
+/* ===== AUTO ADVANCE ===== */
+function autoAdvance(pos){
+  const s=trip.stops[stopIndex];
+  const d=hav(pos,{lat:s.lat,lon:s.lon});
+  if(d>500 && stopIndex<trip.stops.length-1){
+    stopIndex++; kpiStopsVal++; renderStops();
   }
 }
-function prev(){
-  if(stopIndex>0){stopIndex--;renderStops();}
-}
-
-/* ===== OVERLAY ===== */
-function openOverlay(){overlay.style.display="flex";openTab('kpi')}
-function closeOverlay(){overlay.style.display="none"}
-function openTab(n){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  document.getElementById("tab-"+n).classList.add("active");
-}
-
-/* ===== UTIL ===== */
-function haversine(a,b){
-  const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
+function nextStop(){ if(stopIndex<trip.stops.length-1){stopIndex++;kpiStopsVal++;renderStops();}}
+function prevStop(){ if(stopIndex>0){stopIndex--;renderStops();}}
 </script>
 
 </body>
