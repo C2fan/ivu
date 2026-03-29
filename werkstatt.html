@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>IVU Werkstatt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{background:#0D1117;color:#fff;font-family:Segoe UI;padding:20px}
+.item{border:1px solid #30363D;border-radius:12px;padding:12px;margin-bottom:10px}
+button{padding:10px 14px;font-weight:900;border-radius:10px;border:none;background:#1F6FEB;color:#0B1220}
+</style>
+</head>
+
+<body>
+<h2>🔧 Werkstatt</h2>
+
+<h3>Haltestellen‑Ansagen</h3>
+<div id="halts"></div>
+
+<h3>Sonderansagen</h3>
+<div id="sonder"></div>
+<button onclick="addSonder()">➕ Sonderansage hinzufügen</button>
+
+<audio id="audio"></audio>
+
+<script>
+const haltestellen=["Depot","Marktplatz","Rathaus","Hauptbahnhof"];
+
+let ansagen = JSON.parse(localStorage.getItem("ansagen")) || {haltestellen:{}};
+let sonder = JSON.parse(localStorage.getItem("sonderansagen")) || {};
+
+/* ========== HALTESTELLEN ========== */
+function renderHalts(){
+  halts.innerHTML="";
+  haltestellen.forEach(h=>{
+    const d=document.createElement("div");
+    d.className="item";
+    d.innerHTML="<b>"+h+"</b><br>"+(ansagen.haltestellen[h]?.name||"leer");
+    const b=document.createElement("button");
+    b.textContent="Upload";
+    b.onclick=()=>upload(h,true);
+    d.appendChild(b);
+    halts.appendChild(d);
+  });
+}
+
+/* ========== SONDERANSAGEN ========== */
+function renderSonder(){
+  sonder.innerHTML="";
+  Object.keys(sonder).forEach(k=>{
+    const d=document.createElement("div");
+    d.className="item";
+    d.innerHTML="<b>"+k+"</b><br>"+sonder[k].name;
+    const p=document.createElement("button");
+    p.textContent="Play";
+    p.onclick=()=>{audio.src=sonder[k].data;audio.play()};
+    d.appendChild(p);
+    sonder.appendChild(d);
+  });
+}
+
+function addSonder(){
+  const k="Sonderansage "+(Object.keys(sonder).length+1);
+  sonder[k]={name:"leer",data:null};
+  save();
+}
+
+/* ========== UPLOAD ========== */
+function upload(key,isHalt){
+  const i=document.createElement("input");
+  i.type="file";i.accept=".mp3,.wav";
+  i.onchange=e=>{
+    const f=e.target.files[0];
+    const r=new FileReader();
+    r.onload=()=>{
+      if(isHalt) ansagen.haltestellen[key]={name:f.name,data:r.result};
+      else sonder[key]={name:f.name,data:r.result};
+      save();
+    };
+    r.readAsDataURL(f);
+  };
+  i.click();
+}
+
+function save(){
+  localStorage.setItem("ansagen",JSON.stringify(ansagen));
+  localStorage.setItem("sonderansagen",JSON.stringify(sonder));
+  renderHalts();renderSonder();
+}
+
+renderHalts();renderSonder();
+</script>
+</body>
+</html>

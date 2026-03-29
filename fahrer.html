@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>IVU Fahrer</title>
+
+<!-- iOS Web-App -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<style>
+body{margin:0;background:#0D1117;color:#fff;font-family:Segoe UI;overflow:hidden}
+.header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:2px solid #1F6FEB}
+.left{display:flex;flex-direction:column}
+#line{font-size:2rem;font-weight:900}
+#ziel{font-size:1.4rem;color:#58A6FF;font-weight:900}
+.info{display:flex;gap:16px;align-items:center}
+#time{font-size:2rem;color:#1F6FEB}
+#heartbeat{width:14px;height:14px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88}
+
+.buttons{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:30px}
+button{padding:24px;font-size:1.3rem;font-weight:900;border-radius:16px;border:none;background:#1F6FEB;color:#0B1220}
+</style>
+</head>
+
+<body>
+<div class="header">
+  <div class="left">
+    <div id="line"></div>
+    <div id="ziel"></div>
+  </div>
+  <div class="info">
+    <div id="time"></div>
+    <div id="heartbeat"></div>
+  </div>
+</div>
+
+<div class="buttons">
+  <button onclick="prev()">◀ Zurück</button>
+  <button onclick="next()">Weiter ▶</button>
+  <button onclick="playCurrent()">🔊 Ansage Halt</button>
+  <button onclick="playSonder()">📣 Sonderansage</button>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+/* ================= FESTE FAHRTDATEN (LOKAL) ================= */
+const FAHRT = {
+  linie: "Linie 1",
+  ziel: "Hauptbahnhof",
+  haltestellen: ["Depot","Marktplatz","Rathaus","Hauptbahnhof"]
+};
+
+/* ================= STATE ================= */
+let idx = 0;
+const ansagen = JSON.parse(localStorage.getItem("ansagen")) || { haltestellen:{} };
+const sonder = JSON.parse(localStorage.getItem("sonderansagen")) || {};
+
+/* ================= UI ================= */
+line.textContent = FAHRT.linie;
+ziel.textContent = "Ziel: " + FAHRT.ziel;
+
+/* ================= AUDIO ================= */
+function playCurrent(){
+  const name = FAHRT.haltestellen[idx];
+  if(ansagen.haltestellen[name]){
+    audio.src = ansagen.haltestellen[name].data;
+    audio.play();
+  } else alert("Keine Ansage vorhanden");
+}
+
+function playSonder(){
+  const keys = Object.keys(sonder);
+  if(keys.length){
+    audio.src = sonder[keys[0]].data;
+    audio.play();
+  }
+}
+
+function next(){ if(idx < FAHRT.haltestellen.length-1) idx++; }
+function prev(){ if(idx > 0) idx--; }
+
+/* ================= HEARTBEAT + WATCHDOG ================= */
+let lastBeat = Date.now();
+setInterval(()=>{
+  lastBeat = Date.now();
+  heartbeat.style.background="#00ff88";
+  time.textContent=new Date().toLocaleTimeString();
+},1000);
+
+setInterval(()=>{
+  if(Date.now()-lastBeat>15000){
+    location.reload();
+  }
+},3000);
+</script>
+</body>
+</html>
+``

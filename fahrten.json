@@ -1,0 +1,21 @@
+[
+  {
+    "Linie": "Linie 1",
+    "Ziel": "Hauptbahnhof",
+    "Haltestellen": [
+      { "Name": "Depot", "Fahrzeit": 0 },
+      { "Name": "Marktplatz", "Fahrzeit": 5 },
+      { "Name": "Rathaus", "Fahrzeit": 3 },
+      { "Name": "Hauptbahnhof", "Fahrzeit": 4 }
+    ]
+  },
+  {
+    "Linie": "Linie 2",
+    "Ziel": "Flughafen",
+    "Haltestellen": [
+      { "Name": "ZOB", "Fahrzeit": 0 },
+      { "Name": "Industriepark", "Fahrzeit": 6 },
+      { "Name": "Terminal", "Fahrzeit": 7 }
+    ]
+  }
+]
