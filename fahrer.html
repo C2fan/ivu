@@ -1,781 +1,251 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>IVU Fahreranzeige</title>
+<meta charset="UTF-8">
+<title>IVU Fahreranzeige</title>
 
-  <meta name="viewport"
-        content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport"
+content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    :root{
-      --bg:#0D1117; --panel:#161B22; --line:#30363D;
-      --blue:#1F6FEB; --blue2:#58A6FF;
-      --green:#00FF88; --orange:#FFB347; --red:#FF4444;
-      --divider:#222; --muted:#8B949E;
-    }
+<style>
+:root{
+  --bg:#0D1117;
+  --panel:#161B22;
+  --line:#30363D;
+  --blue:#1F6FEB;
+  --blue2:#58A6FF;
+  --green:#00FF88;
+}
 
-    html,body{
-      margin:0; height:100%; width:100%;
-      background:var(--bg); color:#fff;
-      font-family:Segoe UI,Arial,sans-serif;
-      overflow:hidden;
-      touch-action:none;
-      -webkit-user-select:none;
-      -webkit-touch-callout:none;
-      -webkit-text-size-adjust:100%;
-    }
+/* GLOBAL */
+html,body{
+  margin:0;
+  height:100%;
+  width:100%;
+  background:var(--bg);
+  color:#fff;
+  font-family:Segoe UI,Arial,sans-serif;
+  overflow:hidden;
+  touch-action:none;
+}
 
-    /* iOS zoom blocken */
-    document, body { -webkit-text-size-adjust: 100%; }
+/* HEADER */
+.header{
+  height:70px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 16px;
+  background:#161B22;
+  border-bottom:2px solid var(--blue);
+}
+#delay{font-size:1.6rem;font-weight:900}
+#headway{font-size:1rem;font-weight:900;color:#ccc}
 
-    /* ---------- PIN nur beim Laden ---------- */
-    #pinLock{
-      position:fixed; inset:0; z-index:100000;
-      background:#000;
-      display:flex; align-items:center; justify-content:center;
-      padding:20px;
-    }
-    .pinCard{
-      width:min(520px, 92vw);
-      border:2px solid var(--blue);
-      border-radius:22px;
-      background:rgba(255,255,255,0.06);
-      padding:18px;
-      box-shadow:0 18px 50px rgba(0,0,0,0.65);
-    }
-    .pinTitle{
-      margin:0 0 10px;
-      font-size:1.4rem;
-      font-weight:900;
-      color:var(--blue2);
-      text-align:center;
-    }
-    #pinDisplay{
-      font-size:2rem;
-      font-weight:900;
-      letter-spacing:10px;
-      text-align:center;
-      margin:10px 0 14px;
-      padding:10px 0;
-      border-radius:14px;
-      background:rgba(0,0,0,0.35);
-      border:1px solid rgba(255,255,255,0.12);
-    }
-    .pinPad{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
-    .pinBtn{
-      height:64px;
-      border:none;
-      border-radius:16px;
-      background:linear-gradient(135deg,var(--blue),var(--blue2));
-      color:#0B1220;
-      font-size:1.4rem;
-      font-weight:900;
-      cursor:pointer;
-    }
-    .pinBtn:active{ transform:scale(0.98); }
-    .pinBtn.clear{ background:var(--red); color:#0B1220; }
-    .pinHint{
-      margin-top:10px;
-      text-align:center;
-      color:var(--muted);
-      font-size:.95rem;
-      font-weight:800;
-    }
+/* LAYOUT */
+.main{
+  display:grid;
+  grid-template-columns:42% 6px 1fr;
+  height:calc(100% - 70px);
+}
 
-    /* ---------- HEADER ---------- */
-    .header{
-      height:72px;
-      display:flex; justify-content:space-between; align-items:center;
-      padding:0 16px;
-      border-bottom:2px solid var(--blue);
-      background:linear-gradient(90deg,#0D1117,#161B22);
-    }
-    select{
-      background:#0D1117; color:#fff;
-      border:1px solid var(--line);
-      padding:8px 10px;
-      border-radius:10px;
-      font-weight:900;
-      max-width: 55vw;
-    }
-    .rightHeader{ text-align:right; line-height:1.1; }
-    #delay{ font-size:1.55rem; font-weight:900; }
-    #headway{ font-size:1rem; font-weight:900; color:#ccc; }
+/* HALTESTELLEN LINKS */
+.stops{
+  padding:12px;
+  overflow-y:auto;
+  height:100%;
+}
+.stop{
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:10px;
+  padding:10px;
+  border-bottom:1px solid var(--line);
+  font-weight:800;
+}
+.stop.active{background:rgba(31,111,235,.25)}
+.stop.done{opacity:.4}
 
-    /* ---------- MAIN GRID ---------- */
-    .main{
-      display:grid;
-      grid-template-columns: 42% 8px 1fr;
-      height:calc(100% - 72px);
-    }
+/* TRENNER */
+.divider{background:#222}
 
-    /* ---------- LEFT: Stops ---------- */
-    .stops{ padding:12px; overflow:hidden; }
-    .stop{
-      display:grid; grid-template-columns:1fr auto auto;
-      gap:10px; padding:10px 10px;
-      border-bottom:1px solid var(--line);
-      font-weight:850; align-items:center;
-    }
-    .stop.active{ background:rgba(31,111,235,.22); border-radius:12px; }
-    .stop.done{ opacity:.45; text-decoration:line-through; }
-    .time{ color:var(--blue2); font-weight:900; }
-    .dist{ color:#d6d6d6; font-size:.85rem; font-weight:900; }
+/* RECHTS */
+.right{
+  display:grid;
+  grid-template-rows:50% auto auto; /* Karte 50% */
+  height:100%;
+}
+#map{width:100%;height:100%}
 
-    .divider{ background:var(--divider); }
+/* BUTTONS */
+.controls{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  padding:12px;
+  background:var(--panel);
+  border-top:1px solid var(--line);
+}
+.btn{
+  padding:18px;
+  font-weight:900;
+  font-size:1.1rem;
+  border:none;
+  border-radius:18px;
+  background:var(--blue);
+  color:#000;
+}
+.btn.ghost{
+  background:#222;
+  color:#fff;
+}
 
-    /* ---------- RIGHT: Map + Controls ---------- */
-    .right{ display:grid; grid-template-rows: 1fr 64px 64px; }
-    #map{ width:100%; height:100%; }
-
-    .controls{
-      display:grid; grid-template-columns:repeat(3,1fr);
-      gap:10px; padding:8px;
-      background:var(--panel);
-      border-top:1px solid var(--line);
-    }
-    .btn{
-      border:none; border-radius:14px; padding:12px;
-      font-weight:900; font-size:0.95rem;
-      background:linear-gradient(135deg,var(--blue),var(--blue2));
-      color:#0B1220; cursor:pointer;
-    }
-    .btn:active{ transform:scale(0.98); }
-    .btn.ghost{
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.12);
-      color:#fff;
-    }
-    .btn.danger{
-      background:var(--red);
-      color:#0B1220;
-    }
-
-    /* ---------- OVERLAY Werkstatt ---------- */
-    #overlay{
-      position:fixed; inset:0; z-index:9999;
-      background:rgba(0,0,0,.85);
-      display:none;
-    }
-    #panel{
-      width:92%; height:92%; margin:auto;
-      background:#0D1117;
-      border-radius:18px;
-      border:2px solid var(--blue);
-      display:flex; flex-direction:column;
-    }
-    #panel header{
-      padding:12px 14px;
-      background:#161B22;
-      font-weight:900;
-      display:flex; justify-content:space-between; align-items:center;
-      border-bottom:1px solid var(--line);
-    }
-    #panel header button{
-      border:none; border-radius:10px; padding:8px 12px;
-      font-weight:900;
-      background:rgba(255,255,255,.08); color:#fff;
-      cursor:pointer;
-    }
-    #panel nav{
-      display:flex; gap:8px; padding:10px;
-      border-bottom:1px solid var(--line);
-      flex-wrap:wrap;
-    }
-    #panel nav button{
-      padding:8px 14px; border-radius:10px; border:none;
-      font-weight:900;
-      background:linear-gradient(135deg,var(--blue),var(--blue2));
-      color:#0B1220;
-      cursor:pointer;
-    }
-    .tab{ display:none; flex:1; overflow:auto; padding:12px; }
-    .tab.active{ display:block; }
-
-    .wsHint{ color:var(--muted); font-weight:800; margin-bottom:10px; }
-    .wsBlock{
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
-      background:rgba(255,255,255,.03);
-      margin-bottom:12px;
-    }
-    .wsRow{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .wsTitle{ font-weight:900; }
-    .wsSmall{ color:var(--muted); font-weight:800; font-size:.9rem; }
-    .wsActions{ display:flex; gap:8px; flex-wrap:wrap; }
-    .wsBtn{
-      border:none; border-radius:10px; padding:8px 10px;
-      font-weight:900;
-      background:rgba(255,255,255,.08);
-      color:#fff;
-      cursor:pointer;
-    }
-    .wsBtn.primary{
-      background:linear-gradient(135deg,var(--blue),var(--blue2));
-      color:#0B1220;
-    }
-    .wsBtn.danger{
-      background:var(--red);
-      color:#0B1220;
-    }
-    input[type="file"]{
-      width:100%;
-      padding:10px;
-      border-radius:12px;
-      border:1px dashed rgba(255,255,255,.25);
-      background:rgba(0,0,0,.2);
-      color:#fff;
-    }
-    code{ color: var(--blue2); font-weight:900; }
-  </style>
+/* PFEIL-MARKER */
+.arrowMarker{
+  width:40px;
+  height:40px;
+  transform-origin:50% 50%;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
+}
+.arrowMarker svg{width:40px;height:40px}
+</style>
 </head>
 
 <body>
 
-<!-- PIN beim Laden -->
-<div id="pinLock">
-  <div class="pinCard">
-    <h2 class="pinTitle">🔒 PIN erforderlich</h2>
-    <div id="pinDisplay">◻ ◻ ◻ ◻</div>
-    <div class="pinPad">
-      <button class="pinBtn" onclick="pinPress('1')">1</button>
-      <button class="pinBtn" onclick="pinPress('2')">2</button>
-      <button class="pinBtn" onclick="pinPress('3')">3</button>
-      <button class="pinBtn" onclick="pinPress('4')">4</button>
-      <button class="pinBtn" onclick="pinPress('5')">5</button>
-      <button class="pinBtn" onclick="pinPress('6')">6</button>
-      <button class="pinBtn" onclick="pinPress('7')">7</button>
-      <button class="pinBtn" onclick="pinPress('8')">8</button>
-      <button class="pinBtn" onclick="pinPress('9')">9</button>
-      <button class="pinBtn clear" onclick="pinClear()">✖</button>
-      <button class="pinBtn" onclick="pinPress('0')">0</button>
-      <button class="pinBtn" onclick="pinSubmit()">✔</button>
-    </div>
-    <div class="pinHint">PIN: 2580</div>
+<div class="header">
+  <div>IVU Fahreranzeige</div>
+  <div>
+    <div id="delay">+00:00</div>
+    <div id="headway">HW --:-- / --:--</div>
   </div>
 </div>
 
-<!-- APP -->
-<div id="appRoot" style="display:none;">
-  <div class="header">
-    <select id="tripSelect" onchange="selectTrip(this.value)"></select>
-    <div class="rightHeader">
-      <div id="delay">+00:00</div>
-      <div id="headway">HW --:-- / --:--</div>
-    </div>
-  </div>
+<div class="main">
+  <div class="stops" id="stopList"></div>
+  <div class="divider"></div>
 
-  <div class="main">
-    <div class="stops" id="stopList"></div>
-    <div class="divider"></div>
+  <div class="right">
+    <div id="map"></div>
 
-    <div class="right">
-      <div id="map"></div>
-
-      <div class="controls">
-        <button class="btn" id="gpsBtn" onclick="gpsStart()">📍 GPS</button>
-        <button class="btn ghost" onclick="prevStop()">◀</button>
-        <button class="btn ghost" onclick="nextStop()">▶</button>
-      </div>
-
-      <div class="controls">
-        <button class="btn ghost" onclick="centerOnTrack()">🧭 Track</button>
-        <button class="btn ghost" onclick="toggleTrack()">🧵 Route</button>
-        <button class="btn" onclick="openWorkshop()">🔧</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Werkstatt Overlay -->
-<div id="overlay">
-  <div id="panel">
-    <header>
-      <div>🔧 Werkstatt</div>
-      <button onclick="closeWorkshop()">✖</button>
-    </header>
-
-    <nav>
-      <button onclick="openTab('track')">Track je Linie</button>
-      <button onclick="openTab('info')">Info</button>
-    </nav>
-
-    <div id="tab-track" class="tab active">
-      <div class="wsBlock">
-        <div class="wsRow">
-          <div>
-            <div class="wsTitle">Aktive Linie</div>
-            <div class="wsSmall">Line-ID: <code id="lineIdLabel">—</code></div>
-          </div>
-          <div class="wsActions">
-            <button class="wsBtn primary" onclick="fitTrack()">Auf Track zoomen</button>
-            <button class="wsBtn danger" onclick="deleteLineTrack()">Track löschen</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="wsBlock">
-        <div class="wsTitle">Track hochladen (überschreibt bestehenden Track dieser Linie)</div>
-        <div class="wsSmall" style="margin:6px 0 10px">
-          Erlaubt: <code>.gpx</code> oder <code>.geojson</code> (LineString / FeatureCollection).
-          Pro Linie wird immer nur <b>ein</b> Track gespeichert.
-        </div>
-        <input type="file" accept=".gpx,.geojson,application/geo+json,application/json,application/gpx+xml" onchange="uploadLineTrack(event)">
-      </div>
-
-      <div class="wsBlock">
-        <div class="wsTitle">Aktueller Track-Status</div>
-        <div class="wsSmall" id="trackStatus">—</div>
-      </div>
+    <div class="controls">
+      <button class="btn" onclick="gpsStart()">📍 GPS</button>
+      <button class="btn ghost" onclick="prevStop()">◀</button>
+      <button class="btn ghost" onclick="nextStop()">▶</button>
     </div>
 
-    <div id="tab-info" class="tab">
-      <div class="wsBlock">
-        <div class="wsTitle">Hinweis</div>
-        <div class="wsSmall">
-          Track wird in <code>LocalStorage</code> gespeichert (pro iPad). Wenn du die WebApp löschst, gehen Daten verloren.
-        </div>
-      </div>
+    <div class="controls">
+      <button class="btn ghost" onclick="centerOnTrack()">🧭 Track</button>
+      <button class="btn ghost" onclick="toggleTrack()">🧵 Route</button>
+      <button class="btn ghost">🔧</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ================= iOS: Pinch/Double-Tap Zoom blocken ================= */
-document.addEventListener('gesturestart', e => e.preventDefault());
-document.addEventListener('gesturechange', e => e.preventDefault());
-document.addEventListener('gestureend', e => e.preventDefault());
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function (event) {
-  const now = Date.now();
-  if (now - lastTouchEnd <= 300) event.preventDefault();
-  lastTouchEnd = now;
-}, false);
-
-/* ================= PIN nur beim Laden ================= */
-const ENTRY_PIN = "2580";
-let pin = "";
-const pinDisplay = document.getElementById("pinDisplay");
-function updatePin(){ pinDisplay.textContent = pin.padEnd(4,"◻").split("").join(" "); }
-function pinPress(d){ if(pin.length<4){ pin += d; updatePin(); } }
-function pinClear(){ pin=""; updatePin(); }
-function pinSubmit(){
-  if(pin === ENTRY_PIN){
-    document.getElementById("pinLock").style.display="none";
-    document.getElementById("appRoot").style.display="block";
-  } else {
-    pinClear();
-    alert("Falsche PIN");
-  }
-}
-updatePin();
-
-/* ================= Storage Keys ================= */
-const K_TRIPS="ivu_fahrten_v2";
-const K_LINE_TRACKS="ivu_line_tracks_v1";
-
-/* ================= Defaults ================= */
-const defaultTrips=[{
-  id:"demo1",
-  line:"Linie 1", sollHeadway:600, baseTime:"08:00",
-  name:"Linie 1 → Hbf (08:00)",
-  stops:[
-    {name:"Depot",lat:52.5208,lon:13.4095,time:"08:00"},
-    {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:05"},
-    {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:10"},
-    {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:15"}
-  ]
-}];
-
-/* ================= State ================= */
-let trips = loadJSON(K_TRIPS, defaultTrips);
-let tripIndex=0;
+/* ================= DEMO HALTESTELLEN ================= */
+const stops=[
+  {name:"Depot",lat:52.5208,lon:13.4095},
+  {name:"Marktplatz",lat:52.5215,lon:13.4112},
+  {name:"Rathaus",lat:52.5221,lon:13.4128},
+  {name:"Hbf",lat:52.5231,lon:13.4145}
+];
 let stopIndex=0;
-let currentPos=null;
-let gpsWatchId=null;
 
-let lineTracks = loadJSON(K_LINE_TRACKS, {}); // { "Linie 1": { name, coords:[[lat,lon]...], updatedAt } }
-let trackLayer = null;
-let trackVisible = true;
+/* ================= MAP ================= */
+const map=L.map("map",{zoomControl:false,dragging:false})
+  .setView([52.52,13.41],15);
 
-/* ================= Helpers ================= */
-function loadJSON(key, fallback){
-  try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch{ return fallback; }
-}
-function saveJSON(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
-function timeToSec(t){ const [h,m]=String(t).split(":").map(Number); return h*3600+m*60; }
-function hav(a,b){
-  const R=6371000;
-  const dLat=(b.lat-a.lat)*Math.PI/180;
-  const dLon=(b.lon-a.lon)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
+L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  {maxZoom:19}
+).addTo(map);
 
-/* ================= Trips Select ================= */
-const tripSelect=document.getElementById("tripSelect");
-function refreshTripSelect(){
-  tripSelect.innerHTML="";
-  trips.forEach((t,i)=>{
-    const o=document.createElement("option");
-    o.value=i;
-    o.textContent=t.name;
-    tripSelect.appendChild(o);
-  });
-  tripSelect.value=String(tripIndex);
-}
-refreshTripSelect();
+/* ================= TRACK (POLYLINE) ================= */
+const trackCoords=stops.map(s=>[s.lat,s.lon]);
+let track=L.polyline(trackCoords,{color:"#00FF88",weight:5}).addTo(map);
 
-/* ================= Map ================= */
-let map, marker;
-function initMap(){
-  const s = trips[tripIndex]?.stops?.[0] || {lat:52.52,lon:13.41};
-  map=L.map("map",{
-    zoomControl:false, attributionControl:false,
-    dragging:false, scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false,
-    keyboard:false, tap:false
-  }).setView([s.lat,s.lon],16);
+/* ================= PFEIL-MARKER ================= */
+let arrowMarker=null;
+let lastPos=null;
 
-  // Dark tiles
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19}).addTo(map);
-
-  marker=L.circleMarker([s.lat,s.lon],{radius:8,color:"#1F6FEB",fillColor:"#58A6FF",fillOpacity:1}).addTo(map);
-}
-initMap();
-
-function follow(lat,lon){
-  marker.setLatLng([lat,lon]);
-  map.setView([lat,lon], map.getZoom(), {animate:true, duration:0.35});
-}
-
-/* ================= Render Stops ================= */
-function renderStops(){
-  const list=document.getElementById("stopList");
-  list.innerHTML="";
-  const t=trips[tripIndex];
-  if(!t){ list.textContent="Keine Fahrt vorhanden"; return; }
-
-  t.stops.forEach((s,i)=>{
-    let dist="–";
-    if(currentPos) dist = Math.round(hav(currentPos,s)) + " m";
-    const row=document.createElement("div");
-    row.className="stop"+(i===stopIndex?" active":"")+(i<stopIndex?" done":"");
-    row.innerHTML=`<div>${s.name}</div><div class="time">${s.time}</div><div class="dist">${dist}</div>`;
-    list.appendChild(row);
+function arrowIcon(angle){
+  return L.divIcon({
+    html:`
+      <div class="arrowMarker" style="transform:rotate(${angle}deg)">
+        <svg viewBox="0 0 64 64">
+          <path d="M32 4 L52 52 L32 44 L12 52 Z" fill="#58A6FF"/>
+          <path d="M32 4 L42 44 L32 40 Z" fill="#1F6FEB"/>
+        </svg>
+      </div>`,
+    iconSize:[40,40],
+    iconAnchor:[20,20]
   });
 }
-renderStops();
 
-/* ================= Delay ================= */
-function getCurrentDelaySec(){
-  const t=trips[tripIndex];
-  if(!t || !t.stops[stopIndex]) return 0;
-  const plan=timeToSec(t.stops[stopIndex].time);
-  const n=new Date();
-  const now=n.getHours()*3600+n.getMinutes()*60+n.getSeconds();
-  return now-plan;
-}
-function fmtMMSS(sec){
-  const a=Math.abs(sec);
-  const mm=String(Math.floor(a/60)).padStart(2,"0");
-  const ss=String(a%60).padStart(2,"0");
-  return `${sec>=0?"+":"-"}${mm}:${ss}`;
-}
-function updateDelay(){
-  const diff=getCurrentDelaySec();
-  const a=Math.abs(diff);
-  const el=document.getElementById("delay");
-  el.textContent=fmtMMSS(diff);
-  el.style.color = a<60 ? "var(--green)" : a<180 ? "var(--orange)" : "var(--red)";
-}
-
-/* ================= Headway IST/SOLL ================= */
-function updateHeadway(){
-  const cur=trips[tripIndex];
-  const el=document.getElementById("headway");
-  if(!cur){ el.textContent="HW --:-- / --:--"; return; }
-
-  const same=trips.map((t,i)=>({...t,index:i}))
-    .filter(x=>x.line===cur.line)
-    .sort((a,b)=>timeToSec(a.baseTime)-timeToSec(b.baseTime));
-
-  const pos=same.findIndex(x=>x.index===tripIndex);
-  if(pos<=0){ el.textContent="HW --:-- / --:--"; el.style.color="#ccc"; return; }
-
-  const prev=same[pos-1];
-  const ist = (timeToSec(cur.baseTime) + getCurrentDelaySec()) - timeToSec(prev.baseTime);
-  const soll = cur.sollHeadway || 600;
-
-  const mmIst=String(Math.floor(ist/60)).padStart(2,"0");
-  const ssIst=String(Math.abs(ist%60)).padStart(2,"0");
-  const mmSoll=String(Math.floor(soll/60)).padStart(2,"0");
-  const ssSoll=String(soll%60).padStart(2,"0");
-
-  el.textContent = `HW ${mmIst}:${ssIst} / ${mmSoll}:${ssSoll}`;
-
-  const ratio = ist / soll;
-  el.style.color = ratio>=1 ? "var(--green)" : ratio>=0.7 ? "var(--orange)" : "var(--red)";
-}
-
-/* ================= Auto-Vorschaltung ================= */
-const LEAVE_RADIUS=500;
-const SWITCH_COOLDOWN_MS=15000;
-let lastDist=null;
-let lastSwitch=0;
-
-function autoAdvance(){
-  const t=trips[tripIndex];
-  const s=t?.stops?.[stopIndex];
-  if(!currentPos || !s) return;
-
-  const d = hav(currentPos, s);
-
-  if(d > LEAVE_RADIUS && lastDist !== null && d > lastDist + 20 && (Date.now()-lastSwitch) > SWITCH_COOLDOWN_MS){
-    if(stopIndex < t.stops.length-1){
-      stopIndex++;
-      lastSwitch=Date.now();
-      lastDist=null;
-      renderStops();
-      updateDelay();
-      updateHeadway();
-      return;
-    }
-  }
-  lastDist=d;
-}
-
-/* ================= Buttons ================= */
-function nextStop(){
-  const t=trips[tripIndex];
-  if(stopIndex < t.stops.length-1){
-    stopIndex++;
-    renderStops(); updateDelay(); updateHeadway();
+function setArrow(lat,lon,angle){
+  if(!arrowMarker){
+    arrowMarker=L.marker([lat,lon],{icon:arrowIcon(angle)}).addTo(map);
+  }else{
+    arrowMarker.setLatLng([lat,lon]);
+    arrowMarker.setIcon(arrowIcon(angle));
   }
 }
-function prevStop(){
-  if(stopIndex>0){
-    stopIndex--;
-    renderStops(); updateDelay(); updateHeadway();
-  }
-}
-function selectTrip(i){
-  tripIndex=+i;
-  stopIndex=0;
-  lastDist=null; lastSwitch=0;
-  refreshTripSelect();
-  renderStops(); updateDelay(); updateHeadway();
-  refreshTrackUI();
-  drawTrackForCurrentLine();
+
+/* ================= BEARING ================= */
+function bearing(a,b){
+  const φ1=a.lat*Math.PI/180;
+  const φ2=b.lat*Math.PI/180;
+  const Δλ=(b.lon-a.lon)*Math.PI/180;
+  const y=Math.sin(Δλ)*Math.cos(φ2);
+  const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 
 /* ================= GPS ================= */
 function gpsStart(){
-  if(!navigator.geolocation){ alert("GPS nicht verfügbar"); return; }
-  if(gpsWatchId){ alert("GPS läuft bereits"); return; }
-  document.getElementById("gpsBtn").textContent="📍 GPS läuft";
-
-  gpsWatchId = navigator.geolocation.watchPosition((p)=>{
-    currentPos={lat:p.coords.latitude, lon:p.coords.longitude};
-    follow(currentPos.lat, currentPos.lon);
-    renderStops(); updateDelay(); updateHeadway(); autoAdvance();
-  }, ()=>{
-    alert("GPS Zugriff fehlgeschlagen (HTTPS nötig)");
-  }, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
+  navigator.geolocation.watchPosition(p=>{
+    const pos={lat:p.coords.latitude,lon:p.coords.longitude};
+    let angle=p.coords.heading;
+    if((angle==null||angle<0)&&lastPos) angle=bearing(lastPos,pos);
+    if(angle==null) angle=0;
+    setArrow(pos.lat,pos.lon,angle);
+    map.setView([pos.lat,pos.lon],map.getZoom());
+    lastPos=pos;
+  },()=>{}, {enableHighAccuracy:true});
 }
 
-/* ================= Track je Linie (nur 1 Track pro Linie, überschreiben) ================= */
-function currentLineId(){
-  const t=trips[tripIndex];
-  return (t && t.line) ? t.line : "UNBEKANNT";
+/* ================= HALTESTELLEN UI ================= */
+function renderStops(){
+  stopList.innerHTML="";
+  stops.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="stop"+(i===stopIndex?" active":"")+(i<stopIndex?" done":"");
+    d.textContent=s.name;
+    stopList.appendChild(d);
+  });
+}
+renderStops();
+
+function nextStop(){
+  if(stopIndex<stops.length-1){stopIndex++;renderStops();}
+}
+function prevStop(){
+  if(stopIndex>0){stopIndex--;renderStops();}
 }
 
-function refreshTrackUI(){
-  const lineId = currentLineId();
-  document.getElementById("lineIdLabel").textContent = lineId;
-
-  const entry = lineTracks[lineId];
-  const st = document.getElementById("trackStatus");
-  if(!entry){
-    st.textContent = "Kein Track gespeichert.";
-  }else{
-    const pts = entry.coords?.length || 0;
-    const dt = entry.updatedAt ? new Date(entry.updatedAt).toLocaleString() : "—";
-    st.textContent = `Track: ${entry.name} · Punkte: ${pts} · Updated: ${dt}`;
-  }
-}
-
-function setLineTrack(lineId, trackObj){
-  lineTracks[lineId] = trackObj;
-  saveJSON(K_LINE_TRACKS, lineTracks);
-  refreshTrackUI();
-  drawTrackForCurrentLine();
-}
-
-function deleteLineTrack(){
-  const lineId = currentLineId();
-  if(!confirm(`Track für "${lineId}" wirklich löschen?`)) return;
-  delete lineTracks[lineId];
-  saveJSON(K_LINE_TRACKS, lineTracks);
-  refreshTrackUI();
-  removeTrackLayer();
-}
-
-function removeTrackLayer(){
-  if(trackLayer){
-    map.removeLayer(trackLayer);
-    trackLayer = null;
-  }
-}
-
-function drawTrackForCurrentLine(){
-  removeTrackLayer();
-  const lineId = currentLineId();
-  const entry = lineTracks[lineId];
-  if(!entry || !entry.coords || entry.coords.length < 2) return;
-
-  if(!trackVisible) return;
-
-  trackLayer = L.polyline(entry.coords, {
-    color: "#00FF88",
-    weight: 5,
-    opacity: 0.95
-  }).addTo(map);
-}
-
+/* ================= TRACK BUTTONS ================= */
 function toggleTrack(){
-  trackVisible = !trackVisible;
-  drawTrackForCurrentLine();
-  if(trackVisible) fitTrack();
+  if(map.hasLayer(track)) map.removeLayer(track);
+  else track.addTo(map);
 }
-
-function fitTrack(){
-  if(!trackLayer) return;
-  map.fitBounds(trackLayer.getBounds(), { padding: [40,40] });
-}
-
 function centerOnTrack(){
-  if(trackLayer) fitTrack();
-  else alert("Kein Track geladen.");
+  map.fitBounds(track.getBounds(),{padding:[40,40]});
 }
-
-/* Upload: GPX oder GeoJSON, überschreibt Track der aktuellen Linie */
-function uploadLineTrack(e){
-  const file = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-  if(!file) return;
-
-  const lineId = currentLineId();
-  const exists = !!lineTracks[lineId];
-
-  if(exists){
-    const ok = confirm(`Für "${lineId}" existiert bereits ein Track.\nÜberschreiben mit "${file.name}"?`);
-    if(!ok) { e.target.value=""; return; }
-  }
-
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const text = reader.result;
-      const coords = parseTrackCoords(file.name, text);
-      if(!coords || coords.length < 2){
-        alert("Track konnte nicht gelesen werden oder hat zu wenige Punkte.");
-        return;
-      }
-
-      setLineTrack(lineId, {
-        name: file.name,
-        coords,
-        updatedAt: new Date().toISOString()
-      });
-
-      fitTrack();
-      e.target.value="";
-    }catch(err){
-      console.error(err);
-      alert("Fehler beim Verarbeiten der Datei.");
-    }
-  };
-  reader.readAsText(file);
-}
-
-/* Parser */
-function parseTrackCoords(filename, content){
-  const lower = filename.toLowerCase();
-
-  // GPX
-  if(lower.endsWith(".gpx")){
-    const xml = new DOMParser().parseFromString(content, "text/xml");
-    const pts = Array.from(xml.getElementsByTagName("trkpt"));
-    const coords = pts.map(p => [Number(p.getAttribute("lat")), Number(p.getAttribute("lon"))])
-                      .filter(x => Number.isFinite(x[0]) && Number.isFinite(x[1]));
-    return coords;
-  }
-
-  // GeoJSON
-  const gj = JSON.parse(content);
-
-  function coordsFromGeometry(geom){
-    if(!geom) return [];
-    if(geom.type === "LineString"){
-      return geom.coordinates.map(c => [c[1], c[0]]);
-    }
-    if(geom.type === "MultiLineString"){
-      // concat all lines
-      return geom.coordinates.flat().map(c => [c[1], c[0]]);
-    }
-    return [];
-  }
-
-  if(gj.type === "FeatureCollection"){
-    // take first LineString-like feature
-    for(const f of gj.features || []){
-      const coords = coordsFromGeometry(f.geometry);
-      if(coords.length >= 2) return coords;
-    }
-    return [];
-  }
-
-  if(gj.type === "Feature"){
-    return coordsFromGeometry(gj.geometry);
-  }
-
-  // raw geometry
-  return coordsFromGeometry(gj);
-}
-
-/* ================= Werkstatt Overlay (ohne PIN) ================= */
-function openWorkshop(){
-  document.getElementById("overlay").style.display="flex";
-  openTab("track");
-  refreshTrackUI();
-}
-function closeWorkshop(){
-  document.getElementById("overlay").style.display="none";
-}
-function openTab(id){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  document.getElementById("tab-"+id).classList.add("active");
-}
-
-/* ================= Initial UI ================= */
-refreshTrackUI();
-drawTrackForCurrentLine();
-updateDelay();
-updateHeadway();
-setInterval(()=>{ updateDelay(); updateHeadway(); }, 1000);
 </script>
 
 </body>
