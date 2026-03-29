@@ -1,243 +1,927 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>IVU Fahrer</title>
+  <meta charset="UTF-8" />
+  <title>IVU Fahrer</title>
 
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- iPad: exakt fit + nicht zoombar -->
+  <meta name="viewport"
+        content="width=device-width,height=device-height,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no,viewport-fit=cover">
 
-<style>
-:root{
-  --bg:#0D1117; --panel:#161B22; --line:#30363D;
-  --blue:#1F6FEB; --blue2:#58A6FF; --warn:#FFB347;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;background:var(--bg);color:#fff;
-  font-family:Segoe UI,Arial,sans-serif;overflow:hidden;
-}
+  <!-- iOS Web-App -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-/* ===== PIN LOCK ===== */
-#pinLock{
-  position:fixed;inset:0;background:#000;z-index:100000;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-}
-#pinDisplay{
-  letter-spacing:8px;font-size:2rem;margin-bottom:20px;
-}
-.pinPad{
-  display:grid;grid-template-columns:repeat(3,80px);gap:14px;
-}
-.pinBtn{
-  height:70px;border-radius:14px;border:none;
-  background:#1F6FEB;color:#000;font-size:1.5rem;font-weight:900;
-}
-.pinBtn.clear{background:#FF4444;color:#000}
+  <!-- Leaflet (OSM) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-/* ===== HEADER ===== */
-.header{
-  height:80px;background:var(--panel);
-  border-bottom:2px solid var(--blue);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;position:relative;
-}
-#title{font-size:1.4rem;font-weight:900}
-#kpiMini{font-size:.9rem;color:var(--blue2)}
-#kpiSpark{width:120px;height:26px;background:rgba(255,255,255,.05);border-radius:6px}
-#statusBox{padding:8px 14px;border-radius:10px;background:#444;font-weight:900}
+  <style>
+    :root{
+      --bg:#0D1117;
+      --panel:#161B22;
+      --line:#30363D;
+      --blue:#1F6FEB;
+      --blue2:#58A6FF;
+      --warn:#FFB347;
+      --red:#FF4444;
+      --green:#00FF88;
+      --text:#FFFFFF;
+      --muted:#8B949E;
+    }
 
-/* ===== SIM BANNER ===== */
-#simBanner{
-  position:absolute;top:80px;left:0;right:0;height:36px;
-  background:var(--warn);color:#000;font-weight:900;
-  display:none;align-items:center;justify-content:center;z-index:9999;
-}
+    html,body{
+      width:100%;height:100%;
+      margin:0;padding:0;
+      overflow:hidden;              /* kein Scrollen */
+      touch-action:none;            /* kein Pinch/Doppeltipp-Zoom */
+      -webkit-user-select:none;
+      -webkit-touch-callout:none;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Segoe UI, Arial, sans-serif;
+    }
 
-/* ===== MAIN ===== */
-.main{display:flex;height:calc(100vh - 80px)}
-.controls{
-  width:28%;background:var(--panel);padding:18px;
-  display:grid;grid-template-columns:1fr 1fr;gap:14px;
-}
-.ctrlBtn{
-  padding:18px;border-radius:16px;border:none;
-  background:linear-gradient(135deg,var(--blue),var(--blue2));
-  color:#000;font-size:1.1rem;font-weight:900;
-}
-.content{flex:1;display:flex;flex-direction:column}
-#map{flex:1}
-#info{
-  padding:10px;background:var(--bg);
-  border-top:1px solid var(--line);font-weight:900;
-}
-#stops{overflow:auto;max-height:220px}
-.stop{padding:8px;border-bottom:1px solid var(--line)}
-.stop.active{background:rgba(31,111,235,.25)}
-</style>
+    /* ============ Nachtmodus ============ */
+    body.night{
+      --bg:#000000;
+      --panel:#050505;
+      --line:#1b1b1b;
+      --blue:#3a8cff;
+      --blue2:#7fb3ff;
+      --text:#ffffff;
+      --muted:#b0b0b0;
+    }
+
+    /* ============ Portrait Sperre ============ */
+    #orientationLock{
+      position:fixed;inset:0;
+      background:#000;
+      z-index:200000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:24px;
+    }
+    #orientationLock .box{
+      max-width:520px;
+      border:2px solid var(--blue);
+      border-radius:18px;
+      padding:22px 18px;
+      background:rgba(255,255,255,0.06);
+    }
+    #orientationLock .t1{font-size:2rem;font-weight:900;margin-bottom:10px}
+    #orientationLock .t2{font-size:1.1rem;color:var(--muted);font-weight:700}
+
+    /* ============ PIN Lock ============ */
+    #pinLock{
+      position:fixed;inset:0;
+      background:#000;
+      z-index:100001;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+      padding:20px;
+    }
+    #pinLock .pinCard{
+      width:min(520px, 92vw);
+      border:2px solid var(--blue);
+      border-radius:22px;
+      background:rgba(255,255,255,0.06);
+      padding:18px;
+      box-shadow:0 18px 50px rgba(0,0,0,0.65);
+    }
+    #pinLock h1{
+      margin:0 0 10px;
+      font-size:1.4rem;
+      font-weight:900;
+      color:var(--blue2);
+      text-align:center;
+    }
+    #pinDisplay{
+      font-size:2rem;
+      font-weight:900;
+      letter-spacing:10px;
+      text-align:center;
+      margin:10px 0 14px;
+      padding:10px 0;
+      border-radius:14px;
+      background:rgba(0,0,0,0.35);
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    .pinPad{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:12px;
+    }
+    .pinBtn{
+      height:64px;
+      border:none;
+      border-radius:16px;
+      background:linear-gradient(135deg,var(--blue),var(--blue2));
+      color:#0B1220;
+      font-size:1.4rem;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .pinBtn:active{transform:scale(0.98)}
+    .pinBtn.clear{background:var(--red)}
+    .pinHint{
+      margin-top:10px;
+      text-align:center;
+      color:var(--muted);
+      font-size:0.95rem;
+      font-weight:700;
+    }
+
+    /* ============ App Layout ============ */
+    .app{
+      width:100%;
+      height:100%;
+      display:grid;
+      grid-template-rows:80px 1fr 220px;
+    }
+
+    .header{
+      background:linear-gradient(90deg, var(--bg), var(--panel));
+      border-bottom:2px solid var(--blue);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 18px;
+      position:relative;
+    }
+    .titleBlock{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    #title{
+      font-size:1.35rem;
+      font-weight:900;
+      letter-spacing:0.5px;
+    }
+    #subTitle{
+      font-size:0.95rem;
+      font-weight:800;
+      color:var(--muted);
+    }
+
+    .kpiBlock{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    #kpiMini{
+      font-size:0.95rem;
+      font-weight:900;
+      color:var(--blue2);
+      white-space:nowrap;
+    }
+    #kpiSpark{
+      width:140px;
+      height:30px;
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:10px;
+    }
+    #statusBox{
+      min-width:150px;
+      text-align:center;
+      padding:10px 14px;
+      border-radius:14px;
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.12);
+      font-weight:900;
+    }
+    #heartbeat{
+      width:12px;height:12px;border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 10px var(--green);
+    }
+
+    /* Sim Banner */
+    #simBanner{
+      position:absolute;
+      left:0; right:0;
+      bottom:-36px;
+      height:36px;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:var(--warn);
+      color:#000;
+      font-weight:900;
+      letter-spacing:2px;
+    }
+
+    /* Map */
+    #map{
+      width:100%;
+      height:100%;
+    }
+
+    /* Footer */
+    .footer{
+      background:var(--panel);
+      border-top:1px solid var(--line);
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap:12px;
+      padding:12px;
+    }
+    .card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:rgba(255,255,255,0.03);
+      padding:12px;
+      overflow:hidden;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .label{color:var(--muted);font-weight:800;font-size:0.9rem}
+    .value{font-weight:900;font-size:1.05rem}
+    #nextName{color:var(--blue2)}
+    #distance{color:var(--text)}
+
+    .btnGrid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns:repeat(2, 1fr);
+      gap:10px;
+    }
+    .btn{
+      border:none;
+      border-radius:16px;
+      padding:14px 12px;
+      font-weight:900;
+      font-size:1.05rem;
+      cursor:pointer;
+      background:linear-gradient(135deg,var(--blue),var(--blue2));
+      color:#0B1220;
+    }
+    .btn:active{transform:scale(0.98)}
+    .btn.ghost{
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text);
+    }
+    .btn.danger{
+      background:var(--red);
+      color:#0B1220;
+    }
+
+    #stopList{
+      margin-top:8px;
+      max-height:140px;
+      overflow:auto;
+      border-top:1px solid var(--line);
+    }
+    .stopRow{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:8px 4px;
+      border-bottom:1px solid var(--line);
+      font-weight:800;
+    }
+    .stopRow.active{
+      background:rgba(31,111,235,0.18);
+      border-radius:10px;
+      padding:8px 10px;
+    }
+    .stopRow.done{
+      opacity:0.45;
+      text-decoration:line-through;
+    }
+    .small{font-size:0.85rem;color:var(--muted);font-weight:800}
+
+    /* Leaflet: keine Interaktion */
+    .leaflet-control-container{display:none}
+  </style>
 </head>
 
 <body>
 
-<!-- ===== PIN LOCK ===== -->
-<div id="pinLock">
-  <div id="pinDisplay">◻ ◻ ◻ ◻</div>
-  <div class="pinPad">
-    <button class="pinBtn" onclick="pinPress('1')">1</button>
-    <button class="pinBtn" onclick="pinPress('2')">2</button>
-    <button class="pinBtn" onclick="pinPress('3')">3</button>
-    <button class="pinBtn" onclick="pinPress('4')">4</button>
-    <button class="pinBtn" onclick="pinPress('5')">5</button>
-    <button class="pinBtn" onclick="pinPress('6')">6</button>
-    <button class="pinBtn" onclick="pinPress('7')">7</button>
-    <button class="pinBtn" onclick="pinPress('8')">8</button>
-    <button class="pinBtn" onclick="pinPress('9')">9</button>
-    <button class="pinBtn clear" onclick="pinClear()">✖</button>
-    <button class="pinBtn" onclick="pinPress('0')">0</button>
-    <button class="pinBtn" onclick="pinSubmit()">✔</button>
+  <!-- Portrait Lock -->
+  <div id="orientationLock">
+    <div class="box">
+      <div class="t1">🔄 Bitte iPad drehen</div>
+      <div class="t2">Diese Anwendung ist nur im Querformat nutzbar.</div>
+    </div>
   </div>
-</div>
 
-<!-- ===== APP ===== -->
-<div class="header">
-  <div>
-    <div id="title">IVU Fahrer</div>
-    <div id="kpiMini"><span id="kpiKm">0.0 km</span> · <span id="kpiStops">0 Stops</span></div>
+  <!-- PIN Lock -->
+  <div id="pinLock">
+    <div class="pinCard">
+      <h1>🔒 PIN erforderlich</h1>
+      <div id="pinDisplay">◻ ◻ ◻ ◻</div>
+      <div class="pinPad">
+        <button class="pinBtn" onclick="pinPress('1')">1</button>
+        <button class="pinBtn" onclick="pinPress('2')">2</button>
+        <button class="pinBtn" onclick="pinPress('3')">3</button>
+        <button class="pinBtn" onclick="pinPress('4')">4</button>
+        <button class="pinBtn" onclick="pinPress('5')">5</button>
+        <button class="pinBtn" onclick="pinPress('6')">6</button>
+        <button class="pinBtn" onclick="pinPress('7')">7</button>
+        <button class="pinBtn" onclick="pinPress('8')">8</button>
+        <button class="pinBtn" onclick="pinPress('9')">9</button>
+        <button class="pinBtn clear" onclick="pinClear()">✖</button>
+        <button class="pinBtn" onclick="pinPress('0')">0</button>
+        <button class="pinBtn" onclick="pinSubmit()">✔</button>
+      </div>
+      <div class="pinHint">Bitte PIN eingeben, um die Anzeige zu starten</div>
+    </div>
   </div>
-  <canvas id="kpiSpark"></canvas>
-  <div id="statusBox">--</div>
-</div>
 
-<div id="simBanner">🧪 SIMULATIONSMODUS</div>
+  <!-- APP -->
+  <div class="app" id="appRoot" style="display:none;">
+    <div class="header">
+      <div class="titleBlock">
+        <div id="title">IVU Fahrer</div>
+        <div id="subTitle">Betriebsanzeige · OSM Navi · Auto‑Haltestellen</div>
+      </div>
 
-<div class="main">
-  <div class="controls">
-    <button class="ctrlBtn" onclick="gpsStart()">📍 GPS</button>
-    <button class="ctrlBtn" onclick="simStart()">🧪 SIM</button>
-    <button class="ctrlBtn" onclick="prevStop()">◀ Halt</button>
-    <button class="ctrlBtn" onclick="nextStop()">Halt ▶</button>
-  </div>
-  <div class="content">
+      <div class="kpiBlock">
+        <div id="kpiMini"><span id="kpiKm">0.0 km</span> · <span id="kpiStops">0 Stops</span></div>
+        <canvas id="kpiSpark" width="140" height="30"></canvas>
+        <div id="heartbeat" title="System OK"></div>
+      </div>
+
+      <div id="statusBox">--</div>
+      <div id="simBanner">🧪 SIMULATION</div>
+    </div>
+
     <div id="map"></div>
-    <div id="info">Nächster Halt: <span id="nextName">–</span></div>
-    <div id="stops"></div>
+
+    <div class="footer">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="label">Nächster Halt</div>
+            <div class="value" id="nextName">–</div>
+          </div>
+          <div style="text-align:right">
+            <div class="label">Entfernung</div>
+            <div class="value" id="distance">–</div>
+          </div>
+        </div>
+
+        <div id="stopList"></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div class="small">Steuerung</div>
+          <div class="small" id="modeLabel">Modus: —</div>
+        </div>
+
+        <div class="btnGrid">
+          <button class="btn" id="gpsBtn" onclick="gpsStart()">📍 GPS starten</button>
+          <button class="btn ghost" onclick="simStart()">🧪 Simulation</button>
+          <button class="btn ghost" onclick="prevStop()">◀ Zurück</button>
+          <button class="btn" onclick="nextStop()">Weiter ▶</button>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <button class="btn ghost" onclick="toggleNightMode()">🌙 Nacht</button>
+          <button class="btn danger" onclick="simStop()">Stop SIM</button>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
 
 <script>
-/* ===== PIN ===== */
-const PIN="2580"; let pin="";
-function pinPress(d){ if(pin.length<4){ pin+=d; updatePin(); } }
-function pinClear(){ pin=""; updatePin(); }
-function pinSubmit(){
-  if(pin===PIN){ document.getElementById("pinLock").style.display="none"; }
-  else{ pinClear(); alert("Falsche PIN"); }
+/* ================== iOS Zoom blocken ================== */
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend', e => e.preventDefault());
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) event.preventDefault();
+  lastTouchEnd = now;
+}, false);
+
+/* ================== Querformat Sperre ================== */
+function checkOrientation(){
+  const isLandscape = window.innerWidth > window.innerHeight;
+  document.getElementById("orientationLock").style.display = isLandscape ? "none" : "flex";
 }
+window.addEventListener("resize", checkOrientation);
+window.addEventListener("orientationchange", checkOrientation);
+checkOrientation();
+
+/* ================== PIN Lock ================== */
+const ENTRY_PIN = "2580";
+let pin = "";
+const pinDisplay = document.getElementById("pinDisplay");
 function updatePin(){
   pinDisplay.textContent = pin.padEnd(4,"◻").split("").join(" ");
 }
+function pinPress(d){ if(pin.length<4){ pin += d; updatePin(); } }
+function pinClear(){ pin=""; updatePin(); }
+function pinSubmit(){
+  if(pin === ENTRY_PIN){
+    document.getElementById("pinLock").style.display="none";
+    document.getElementById("appRoot").style.display="grid";
+  } else {
+    pinClear();
+    alert("Falsche PIN");
+  }
+}
+updatePin();
 
-/* ===== DATA ===== */
-const trip={
-  stops:[
-    {name:"Depot",lat:52.52,lon:13.40},
-    {name:"Marktplatz",lat:52.521,lon:13.405},
-    {name:"Bahnhof",lat:52.522,lon:13.41}
-  ]
-};
-let stopIndex=0;
+/* ================== Daten / Defaults ================== */
+const K_TRIPS = "ivu_fahrten_v1";
+function loadTrips(){
+  try{
+    const v = localStorage.getItem(K_TRIPS);
+    if(v) return JSON.parse(v);
+  }catch{}
+  // Default Demo (kannst du in Werkstatt später ersetzen)
+  return [{
+    id:"demo",
+    linie:"Linie 1",
+    ziel:"Hauptbahnhof",
+    stops:[
+      {name:"Depot", lat:52.520800, lon:13.409500},
+      {name:"Marktplatz", lat:52.521500, lon:13.411200},
+      {name:"Rathaus", lat:52.522100, lon:13.412800},
+      {name:"Hauptbahnhof", lat:52.523100, lon:13.414500}
+    ]
+  }];
+}
+let trips = loadTrips();
+let tripIndex = 0;
+let stopIndex = 0;
 
-/* ===== MAP ===== */
-const map=L.map("map",{zoomControl:false}).setView([52.52,13.4],16);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-const marker=L.circleMarker([52.52,13.4],{radius:8,color:"#1F6FEB"}).addTo(map);
+/* ================== Map Setup (OSM) ================== */
+let map, markerCurrent;
+let currentPos = null;
 
-function follow(pos){
-  marker.setLatLng([pos.lat,pos.lon]);
-  map.panTo([pos.lat,pos.lon],{animate:true,duration:.5});
+function initMap(lat, lon){
+  map = L.map('map', {
+    zoomControl:false,
+    attributionControl:false,
+    dragging:false,
+    scrollWheelZoom:false,
+    doubleClickZoom:false,
+    boxZoom:false,
+    keyboard:false,
+    tap:false
+  }).setView([lat, lon], 16);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+  markerCurrent = L.circleMarker([lat, lon], {
+    radius: 8,
+    color: '#1F6FEB',
+    fillColor: '#58A6FF',
+    fillOpacity: 1
+  }).addTo(map);
 }
 
-/* ===== STOPS ===== */
+function followPosition(lat, lon){
+  const ll = [lat, lon];
+  markerCurrent.setLatLng(ll);
+  // immer folgen
+  map.setView(ll, map.getZoom(), { animate:true, duration:0.5 });
+}
+
+/* ================== Haversine ================== */
+function haversineMeters(a,b){
+  const R=6371000;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLon=(b.lon-a.lon)*Math.PI/180;
+  const lat1=a.lat*Math.PI/180, lat2=b.lat*Math.PI/180;
+  const x=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+/* ================== Stop Liste UI ================== */
+const nextNameEl = document.getElementById("nextName");
+const distanceEl = document.getElementById("distance");
+const stopListEl = document.getElementById("stopList");
+const modeLabel = document.getElementById("modeLabel");
+
 function renderStops(){
-  stops.innerHTML="";
-  trip.stops.forEach((s,i)=>{
-    const d=document.createElement("div");
-    d.className="stop"+(i===stopIndex?" active":"");
-    d.textContent=(i+1)+". "+s.name;
-    stops.appendChild(d);
+  const t = trips[tripIndex];
+  stopListEl.innerHTML = "";
+  t.stops.forEach((s, i)=>{
+    const row = document.createElement("div");
+    row.className = "stopRow" + (i < stopIndex ? " done" : "") + (i === stopIndex ? " active" : "");
+    row.innerHTML = `<div>${i+1}. ${s.name}</div><div class="small">${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}</div>`;
+    stopListEl.appendChild(row);
   });
-  nextName.textContent=trip.stops[stopIndex].name;
+  nextNameEl.textContent = t.stops[stopIndex]?.name || "—";
 }
 renderStops();
 
-/* ===== KPI ===== */
-let kpiKmVal=0,kpiStopsVal=0,lastPos=null,series=[];
-function hav(a,b){
-  const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-function kpiTick(pos){
-  if(lastPos){
-    const d=hav(pos,lastPos);
-    if(d<200) kpiKmVal+=d/1000;
+/* ================== Auto‑Vorschaltung (500m verlassen) ================== */
+const LEAVE_RADIUS_METERS = 500;
+const SWITCH_COOLDOWN_MS = 15000;
+let lastDistanceToStop = null;
+let lastAutoSwitchAt = 0;
+
+function autoAdvanceCheck(){
+  const t = trips[tripIndex];
+  const cs = t.stops[stopIndex];
+  if(!cs || !currentPos) return;
+
+  const dist = haversineMeters(currentPos, {lat:cs.lat, lon:cs.lon});
+  distanceEl.textContent = Math.round(dist) + " m";
+
+  const now = Date.now();
+  if(now - lastAutoSwitchAt < SWITCH_COOLDOWN_MS){
+    lastDistanceToStop = dist;
+    return;
   }
-  lastPos={...pos};
-  series.push(kpiKmVal); if(series.length>30)series.shift();
-  kpiKm.textContent=kpiKmVal.toFixed(1)+" km";
-  kpiStops.textContent=kpiStopsVal+" Stops";
-  drawSpark();
+  const leftRadius = dist > LEAVE_RADIUS_METERS;
+  const movingAway = lastDistanceToStop !== null && dist > lastDistanceToStop + 20;
+
+  if(leftRadius && movingAway){
+    if(stopIndex < t.stops.length-1){
+      stopIndex++;
+      kpi.stopsReached++;
+      kpi.autoAdvances++;
+      saveKPI();
+      renderStops();
+      flashStatus("HALT VERLASSEN", "#1F6FEB");
+      lastAutoSwitchAt = now;
+      lastDistanceToStop = null;
+    }
+  } else {
+    lastDistanceToStop = dist;
+  }
 }
-function drawSpark(){
-  const c=kpiSpark,ctx=c.getContext("2d");
+
+function flashStatus(text, bg){
+  const sb = document.getElementById("statusBox");
+  const prevT = sb.textContent;
+  const prevB = sb.style.background;
+  sb.textContent = text;
+  sb.style.background = bg;
+  setTimeout(()=>{ sb.textContent = prevT || "--"; sb.style.background = prevB || ""; }, 2000);
+}
+
+/* ================== GPS / Simulation ================== */
+let gpsWatchId = null;
+let simTimer = null;
+let simEnabled = false;
+
+function onRealGpsActivated(){
+  if(simEnabled) simStop();
+  flashStatus("GPS AKTIV", "#1F6FEB");
+}
+
+function gpsStart(){
+  onRealGpsActivated();
+  modeLabel.textContent = "Modus: GPS";
+  const gpsBtn = document.getElementById("gpsBtn");
+  gpsBtn.textContent = "📍 GPS läuft";
+
+  if(!navigator.geolocation){
+    alert("GPS nicht verfügbar");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition((p)=>{
+    const pos = { lat:p.coords.latitude, lon:p.coords.longitude };
+    if(!map) initMap(pos.lat, pos.lon);
+    currentPos = pos;
+    followPosition(pos.lat, pos.lon);
+    setAutoNightLocation(pos.lat, pos.lon);
+    kpiTouch(pos);
+    autoAdvanceCheck();
+  }, ()=>{
+    alert("GPS Zugriff fehlgeschlagen (iOS braucht HTTPS).");
+  }, { enableHighAccuracy:true, timeout:10000 });
+
+  gpsWatchId = navigator.geolocation.watchPosition((p)=>{
+    onRealGpsActivated();
+    const pos = { lat:p.coords.latitude, lon:p.coords.longitude };
+    if(!map) initMap(pos.lat, pos.lon);
+    currentPos = pos;
+    followPosition(pos.lat, pos.lon);
+    setAutoNightLocation(pos.lat, pos.lon);
+    kpiTouch(pos);
+    autoAdvanceCheck();
+  }, ()=>{}, { enableHighAccuracy:true, maximumAge:1000, timeout:10000 });
+}
+
+function simStart(){
+  // stop GPS
+  if(gpsWatchId){
+    try{ navigator.geolocation.clearWatch(gpsWatchId); }catch{}
+    gpsWatchId = null;
+  }
+  modeLabel.textContent = "Modus: Simulation";
+  document.getElementById("gpsBtn").textContent = "📍 GPS starten";
+  simEnabled = true;
+  document.getElementById("simBanner").style.display="flex";
+
+  // start at current stop
+  const t = trips[tripIndex];
+  let i = stopIndex;
+
+  if(!map){
+    const s = t.stops[stopIndex];
+    initMap(s.lat, s.lon);
+  }
+
+  clearInterval(simTimer);
+  simTimer = setInterval(()=>{
+    const s = t.stops[Math.min(i, t.stops.length-1)];
+    const pos = { lat:s.lat, lon:s.lon };
+    currentPos = pos;
+    followPosition(pos.lat, pos.lon);
+    setAutoNightLocation(pos.lat, pos.lon);
+    kpiTouch(pos);
+    autoAdvanceCheck();
+    i++;
+    if(i >= t.stops.length) i = t.stops.length-1;
+  }, 2000);
+}
+
+function simStop(){
+  simEnabled = false;
+  clearInterval(simTimer);
+  simTimer = null;
+  document.getElementById("simBanner").style.display="none";
+  modeLabel.textContent = "Modus: —";
+}
+
+function nextStop(){
+  const t = trips[tripIndex];
+  if(stopIndex < t.stops.length-1){
+    stopIndex++;
+    kpi.stopsReached++;
+    kpi.manualOverrides++;
+    saveKPI();
+    renderStops();
+  }
+}
+function prevStop(){
+  if(stopIndex > 0){
+    stopIndex--;
+    kpi.manualOverrides++;
+    saveKPI();
+    renderStops();
+  }
+}
+
+/* ================== KPI + Sparkline ================== */
+const K_KPI = "ivu_kpi_v1";
+let kpi = loadJSON(K_KPI, {
+  distanceMeters: 0,
+  driveSeconds: 0,
+  stopsReached: 0,
+  autoAdvances: 0,
+  manualOverrides: 0,
+  simSeconds: 0,
+  lastPos: null,
+  lastTick: null
+});
+
+function loadJSON(key, fallback){
+  try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch{ return fallback; }
+}
+function saveKPI(){ localStorage.setItem(K_KPI, JSON.stringify(kpi)); }
+
+function kpiTouch(pos){
+  const now = Date.now();
+  if(!kpi.lastTick) kpi.lastTick = now;
+
+  const dt = (now - kpi.lastTick)/1000;
+  kpi.lastTick = now;
+
+  kpi.driveSeconds += dt;
+  if(kpi.lastPos){
+    const d = haversineMeters(pos, kpi.lastPos);
+    if(d < 200) kpi.distanceMeters += d;
+  }
+  kpi.lastPos = { ...pos };
+  if(simEnabled) kpi.simSeconds += dt;
+
+  saveKPI();
+  renderKpiMini();
+}
+
+function renderKpiMini(){
+  const km = (kpi.distanceMeters/1000);
+  document.getElementById("kpiKm").textContent = km.toFixed(1) + " km";
+  document.getElementById("kpiStops").textContent = kpi.stopsReached + " Stops";
+  renderSparkline();
+}
+
+function renderSparkline(){
+  const c = document.getElementById("kpiSpark");
+  const ctx = c.getContext("2d");
   ctx.clearRect(0,0,c.width,c.height);
-  if(series.length<2)return;
-  const min=Math.min(...series),max=Math.max(...series)||1;
-  ctx.strokeStyle="#58A6FF";ctx.beginPath();
+
+  // simple spark from last 30 samples (use km snapshots)
+  const series = (window.__sparkSeries ||= []);
+  series.push(kpi.distanceMeters/1000);
+  if(series.length > 30) series.shift();
+  if(series.length < 2) return;
+
+  const min = Math.min(...series);
+  const max = Math.max(...series);
+  const range = (max-min) || 1;
+
+  ctx.strokeStyle = "#58A6FF";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
   series.forEach((v,i)=>{
-    const x=i*(c.width/(series.length-1));
-    const y=c.height-((v-min)/(max-min||1))*c.height;
-    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    const x = i*(c.width/(series.length-1));
+    const y = c.height - ((v-min)/range)*c.height;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   });
   ctx.stroke();
+
+  ctx.fillStyle = "#1F6FEB";
+  const x = c.width;
+  const y = c.height - ((series[series.length-1]-min)/range)*c.height;
+  ctx.beginPath(); ctx.arc(x-3,y,2.5,0,Math.PI*2); ctx.fill();
+}
+renderKpiMini();
+
+/* ================== Heartbeat ================== */
+setInterval(()=>{
+  document.getElementById("heartbeat").style.background = "var(--green)";
+},1000);
+
+/* ================== AUTO NACHTMODUS (System + Sonne + Fallback) ================= */
+const K_NIGHT_MANUAL = "ivu_night_manual";
+const NIGHT_FALLBACK_START = 19;
+const NIGHT_FALLBACK_END   = 6;
+
+let autoNight = { lat:null, lon:null, timer:null, mql:null };
+
+function setNight(on, source="auto"){
+  document.body.classList.toggle("night", !!on);
 }
 
-/* ===== GPS / SIM ===== */
-let simTimer=null;
-function gpsStart(){
-  simStop();
-  navigator.geolocation.watchPosition(p=>{
-    const pos={lat:p.coords.latitude,lon:p.coords.longitude};
-    follow(pos); kpiTick(pos); autoAdvance(pos);
-  });
-}
-function simStart(){
-  simBanner.style.display="flex";
-  let i=0;
-  simTimer=setInterval(()=>{
-    const s=trip.stops[Math.min(i,trip.stops.length-1)];
-    const pos={lat:s.lat,lon:s.lon};
-    follow(pos); kpiTick(pos); autoAdvance(pos);
-    i++;
-  },2000);
-}
-function simStop(){
-  clearInterval(simTimer);
-  simBanner.style.display="none";
+function hasManualNightSetting(){
+  return localStorage.getItem(K_NIGHT_MANUAL) !== null;
 }
 
-/* ===== AUTO ADVANCE ===== */
-function autoAdvance(pos){
-  const s=trip.stops[stopIndex];
-  const d=hav(pos,{lat:s.lat,lon:s.lon});
-  if(d>500 && stopIndex<trip.stops.length-1){
-    stopIndex++; kpiStopsVal++; renderStops();
+function applyManualNightSetting(){
+  const v = localStorage.getItem(K_NIGHT_MANUAL);
+  if(v === null) return false;
+  setNight(v === "1", "manual");
+  return true;
+}
+
+function toggleNightMode(){
+  const on = !document.body.classList.contains("night");
+  localStorage.setItem(K_NIGHT_MANUAL, on ? "1" : "0");
+  setNight(on, "manual");
+}
+
+/* System Dark Mode */
+function initSystemSchemeListener(){
+  if(!window.matchMedia) return false;
+  autoNight.mql = window.matchMedia("(prefers-color-scheme: dark)");
+  setNight(!!autoNight.mql.matches, "system");
+
+  const handler = (e)=>{
+    if(hasManualNightSetting()) return;
+    setNight(!!e.matches, "system");
+  };
+  try{ autoNight.mql.addEventListener("change", handler); }
+  catch{ autoNight.mql.addListener(handler); }
+  return true;
+}
+
+/* Sonne (vereinfachte Sunrise-Equation) */
+function degToRad(d){ return d*Math.PI/180; }
+function radToDeg(r){ return r*180/Math.PI; }
+function clamp360(x){ x = x%360; return x<0?x+360:x; }
+function dayOfYear(date){
+  const start = new Date(date.getFullYear(),0,0);
+  return Math.floor((date-start)/86400000);
+}
+
+function sunTimesLocalMinutes(date, lat, lon){
+  const N = dayOfYear(date);
+  const lngHour = lon/15;
+
+  function calc(isRise){
+    const t = N + (((isRise?6:18)-lngHour)/24);
+    const M = (0.9856*t) - 3.289;
+
+    let L = M + (1.916*Math.sin(degToRad(M))) + (0.020*Math.sin(degToRad(2*M))) + 282.634;
+    L = clamp360(L);
+
+    let RA = radToDeg(Math.atan(0.91764*Math.tan(degToRad(L))));
+    RA = clamp360(RA);
+
+    const Lq = Math.floor(L/90)*90;
+    const RAq= Math.floor(RA/90)*90;
+    RA = (RA + (Lq-RAq))/15;
+
+    const sinDec = 0.39782*Math.sin(degToRad(L));
+    const cosDec = Math.cos(Math.asin(sinDec));
+
+    const cosH = (Math.cos(degToRad(90.833)) - sinDec*Math.sin(degToRad(lat))) / (cosDec*Math.cos(degToRad(lat)));
+    if(cosH>1 || cosH<-1) return null;
+
+    let H = isRise ? (360 - radToDeg(Math.acos(cosH))) : radToDeg(Math.acos(cosH));
+    H = H/15;
+
+    const T = H + RA - (0.06571*t) - 6.622;
+    let UT = T - lngHour;
+    UT = (UT%24 + 24)%24;
+
+    const tz = -date.getTimezoneOffset()/60;
+    let localH = UT + tz;
+    localH = (localH%24 + 24)%24;
+    return Math.round(localH*60);
+  }
+
+  return { sunriseMin: calc(true), sunsetMin: calc(false) };
+}
+
+function isNightBySun(date, lat, lon){
+  const t = sunTimesLocalMinutes(date, lat, lon);
+  if(!t.sunriseMin || !t.sunsetMin) return null;
+  const nowMin = date.getHours()*60 + date.getMinutes();
+  return (nowMin >= t.sunsetMin) || (nowMin < t.sunriseMin);
+}
+
+function scheduleNextSunSwitch(lat, lon){
+  if(autoNight.timer) clearTimeout(autoNight.timer);
+
+  const now = new Date();
+  const t = sunTimesLocalMinutes(now, lat, lon);
+  if(!t.sunriseMin || !t.sunsetMin) return;
+
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  let nextMin = null;
+
+  if(nowMin < t.sunriseMin) nextMin = t.sunriseMin;
+  else if(nowMin < t.sunsetMin) nextMin = t.sunsetMin;
+  else {
+    const tomorrow = new Date(now.getTime()+86400000);
+    const tt = sunTimesLocalMinutes(tomorrow, lat, lon);
+    if(!tt.sunriseMin) return;
+    nextMin = 24*60 + tt.sunriseMin;
+  }
+
+  const deltaMs = Math.max(60000, (nextMin-nowMin)*60000);
+  autoNight.timer = setTimeout(()=>{
+    if(hasManualNightSetting()) return;
+    const night = isNightBySun(new Date(), lat, lon);
+    if(night !== null) setNight(night, "sun");
+    scheduleNextSunSwitch(lat, lon);
+  }, deltaMs);
+}
+
+function isNightByFallbackTime(){
+  const h = new Date().getHours();
+  return (h >= NIGHT_FALLBACK_START || h < NIGHT_FALLBACK_END);
+}
+
+function setAutoNightLocation(lat, lon){
+  autoNight.lat = lat; autoNight.lon = lon;
+  if(hasManualNightSetting()) return;
+
+  const night = isNightBySun(new Date(), lat, lon);
+  if(night !== null){
+    setNight(night, "sun");
+    scheduleNextSunSwitch(lat, lon);
+  } else {
+    setNight(isNightByFallbackTime(), "fallback");
   }
 }
-function nextStop(){ if(stopIndex<trip.stops.length-1){stopIndex++;kpiStopsVal++;renderStops();}}
-function prevStop(){ if(stopIndex>0){stopIndex--;renderStops();}}
+
+function initAutoNightSwitch(){
+  if(applyManualNightSetting()) return;
+  const ok = initSystemSchemeListener();
+  if(!ok) setNight(isNightByFallbackTime(), "fallback");
+}
+initAutoNightSwitch();
+
+/* ================== Startup Map fallback ================== */
+(function boot(){
+  const t = trips[tripIndex];
+  const s = t.stops[0];
+  initMap(s.lat, s.lon);
+  currentPos = { lat:s.lat, lon:s.lon };
+  followPosition(s.lat, s.lon);
+  setAutoNightLocation(s.lat, s.lon);
+  modeLabel.textContent = "Modus: —";
+})();
 </script>
 
 </body>
