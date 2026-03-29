@@ -19,18 +19,15 @@ content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1
   --blue:#1F6FEB;
   --blue2:#58A6FF;
   --green:#00FF88;
+  --orange:#FFB347;
+  --red:#FF4444;
 }
 
-/* GLOBAL */
 html,body{
-  margin:0;
-  height:100%;
-  width:100%;
-  background:var(--bg);
-  color:#fff;
+  margin:0;height:100%;width:100%;
+  background:var(--bg);color:#fff;
   font-family:Segoe UI,Arial,sans-serif;
-  overflow:hidden;
-  touch-action:none;
+  overflow:hidden;touch-action:none;
 }
 
 /* HEADER */
@@ -53,7 +50,7 @@ html,body{
   height:calc(100% - 70px);
 }
 
-/* HALTESTELLEN LINKS */
+/* STOPS */
 .stops{
   padding:12px;
   overflow-y:auto;
@@ -70,14 +67,13 @@ html,body{
 .stop.active{background:rgba(31,111,235,.25)}
 .stop.done{opacity:.4}
 
-/* TRENNER */
+/* DIVIDER */
 .divider{background:#222}
 
-/* RECHTS */
+/* RIGHT */
 .right{
   display:grid;
-  grid-template-rows:50% auto auto; /* Karte 50% */
-  height:100%;
+  grid-template-rows:50% auto auto;
 }
 #map{width:100%;height:100%}
 
@@ -99,17 +95,12 @@ html,body{
   background:var(--blue);
   color:#000;
 }
-.btn.ghost{
-  background:#222;
-  color:#fff;
-}
+.btn.ghost{background:#222;color:#fff}
 
-/* PFEIL-MARKER */
+/* ARROW MARKER – KEIN UMRISS */
 .arrowMarker{
-  width:40px;
-  height:40px;
+  width:40px;height:40px;
   transform-origin:50% 50%;
-  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
 }
 .arrowMarker svg{width:40px;height:40px}
 </style>
@@ -147,14 +138,19 @@ html,body{
 </div>
 
 <script>
-/* ================= DEMO HALTESTELLEN ================= */
+/* ================= DATEN ================= */
 const stops=[
-  {name:"Depot",lat:52.5208,lon:13.4095},
-  {name:"Marktplatz",lat:52.5215,lon:13.4112},
-  {name:"Rathaus",lat:52.5221,lon:13.4128},
-  {name:"Hbf",lat:52.5231,lon:13.4145}
+  {name:"Depot",lat:52.5208,lon:13.4095,time:"08:00"},
+  {name:"Marktplatz",lat:52.5215,lon:13.4112,time:"08:05"},
+  {name:"Rathaus",lat:52.5221,lon:13.4128,time:"08:10"},
+  {name:"Hbf",lat:52.5231,lon:13.4145,time:"08:15"}
 ];
+const baseTime="08:00";
+const sollHeadway=600;
+
 let stopIndex=0;
+let currentPos=null;
+let lastPos=null;
 
 /* ================= MAP ================= */
 const map=L.map("map",{zoomControl:false,dragging:false})
@@ -165,21 +161,20 @@ L.tileLayer(
   {maxZoom:19}
 ).addTo(map);
 
-/* ================= TRACK (POLYLINE) ================= */
+/* ================= TRACK ================= */
 const trackCoords=stops.map(s=>[s.lat,s.lon]);
 let track=L.polyline(trackCoords,{color:"#00FF88",weight:5}).addTo(map);
 
-/* ================= PFEIL-MARKER ================= */
+/* ================= ARROW ================= */
 let arrowMarker=null;
-let lastPos=null;
 
 function arrowIcon(angle){
   return L.divIcon({
     html:`
       <div class="arrowMarker" style="transform:rotate(${angle}deg)">
         <svg viewBox="0 0 64 64">
+          <!-- KEIN stroke, nur fill -->
           <path d="M32 4 L52 52 L32 44 L12 52 Z" fill="#58A6FF"/>
-          <path d="M32 4 L42 44 L32 40 Z" fill="#1F6FEB"/>
         </svg>
       </div>`,
     iconSize:[40,40],
@@ -196,7 +191,12 @@ function setArrow(lat,lon,angle){
   }
 }
 
-/* ================= BEARING ================= */
+/* ================= BERECHNUNGEN ================= */
+function timeToSec(t){
+  const [h,m]=t.split(":").map(Number);
+  return h*3600+m*60;
+}
+
 function bearing(a,b){
   const φ1=a.lat*Math.PI/180;
   const φ2=b.lat*Math.PI/180;
@@ -209,36 +209,66 @@ function bearing(a,b){
 /* ================= GPS ================= */
 function gpsStart(){
   navigator.geolocation.watchPosition(p=>{
-    const pos={lat:p.coords.latitude,lon:p.coords.longitude};
+    currentPos={lat:p.coords.latitude,lon:p.coords.longitude};
+
     let angle=p.coords.heading;
-    if((angle==null||angle<0)&&lastPos) angle=bearing(lastPos,pos);
+    if((angle==null||angle<0)&&lastPos){
+      angle=bearing(lastPos,currentPos);
+    }
     if(angle==null) angle=0;
-    setArrow(pos.lat,pos.lon,angle);
-    map.setView([pos.lat,pos.lon],map.getZoom());
-    lastPos=pos;
-  },()=>{}, {enableHighAccuracy:true});
+
+    setArrow(currentPos.lat,currentPos.lon,angle);
+    map.setView([currentPos.lat,currentPos.lon],map.getZoom());
+
+    updateDelay();
+    updateHeadway();
+
+    lastPos=currentPos;
+  },()=>{}, {enableHighAccuracy:true,maximumAge:1000});
 }
 
-/* ================= HALTESTELLEN UI ================= */
+/* ================= DELAY / HEADWAY ================= */
+function getCurrentDelaySec(){
+  const plan=timeToSec(stops[stopIndex].time);
+  const now=new Date();
+  const cur=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+  return cur-plan;
+}
+
+function updateDelay(){
+  const d=getCurrentDelaySec();
+  const a=Math.abs(d);
+  delay.textContent=`${d>=0?"+":"-"}${String(Math.floor(a/60)).padStart(2,"0")}:${String(a%60).padStart(2,"0")}`;
+  delay.style.color=a<60?varGreen():a<180?varOrange():varRed();
+}
+
+function updateHeadway(){
+  const ist=timeToSec(baseTime)+getCurrentDelaySec();
+  const r=ist/sollHeadway;
+  headway.textContent=`HW ${Math.floor(ist/60)}:${String(ist%60).padStart(2,"0")} / ${Math.floor(sollHeadway/60)}:00`;
+  headway.style.color=r>=1?varGreen():r>=0.7?varOrange():varRed();
+}
+
+function varGreen(){return getComputedStyle(document.documentElement).getPropertyValue('--green')}
+function varOrange(){return getComputedStyle(document.documentElement).getPropertyValue('--orange')}
+function varRed(){return getComputedStyle(document.documentElement).getPropertyValue('--red')}
+
+/* ================= STOPS UI ================= */
 function renderStops(){
   stopList.innerHTML="";
   stops.forEach((s,i)=>{
     const d=document.createElement("div");
     d.className="stop"+(i===stopIndex?" active":"")+(i<stopIndex?" done":"");
-    d.textContent=s.name;
+    d.innerHTML=`<div>${s.name}</div><div>${s.time}</div><div>–</div>`;
     stopList.appendChild(d);
   });
 }
 renderStops();
 
-function nextStop(){
-  if(stopIndex<stops.length-1){stopIndex++;renderStops();}
-}
-function prevStop(){
-  if(stopIndex>0){stopIndex--;renderStops();}
-}
+function nextStop(){if(stopIndex<stops.length-1){stopIndex++;renderStops()}}
+function prevStop(){if(stopIndex>0){stopIndex--;renderStops()}}
 
-/* ================= TRACK BUTTONS ================= */
+/* ================= TRACK CONTROLS ================= */
 function toggleTrack(){
   if(map.hasLayer(track)) map.removeLayer(track);
   else track.addTo(map);
@@ -246,6 +276,9 @@ function toggleTrack(){
 function centerOnTrack(){
   map.fitBounds(track.getBounds(),{padding:[40,40]});
 }
+
+/* LIVE TIMER */
+setInterval(()=>{updateDelay();updateHeadway()},1000);
 </script>
 
 </body>
