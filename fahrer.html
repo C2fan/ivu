@@ -2,100 +2,217 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IVU Fahrer</title>
 
-<!-- iOS Web-App -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-body{margin:0;background:#0D1117;color:#fff;font-family:Segoe UI;overflow:hidden}
-.header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:2px solid #1F6FEB}
-.left{display:flex;flex-direction:column}
-#line{font-size:2rem;font-weight:900}
-#ziel{font-size:1.4rem;color:#58A6FF;font-weight:900}
-.info{display:flex;gap:16px;align-items:center}
-#time{font-size:2rem;color:#1F6FEB}
-#heartbeat{width:14px;height:14px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88}
+/* ===== BASIS ===== */
+body{margin:0;font-family:Segoe UI,Arial;background:#0D1117;color:#fff;overflow:hidden}
+.header{height:80px;background:#161B22;border-bottom:2px solid #1F6FEB;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:relative}
+#statusBox{padding:10px 16px;border-radius:10px;background:#444;font-weight:900}
+#simBanner{position:absolute;top:80px;left:0;right:0;height:40px;background:#FFB347;color:#000;font-weight:900;display:none;align-items:center;justify-content:center;z-index:9999}
 
-.buttons{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:30px}
-button{padding:24px;font-size:1.3rem;font-weight:900;border-radius:16px;border:none;background:#1F6FEB;color:#0B1220}
+.main{display:flex;height:calc(100vh - 80px)}
+.buttons{width:30%;background:#161B22;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{background:#1F6FEB;border:none;border-radius:14px;color:#0B1220;font-weight:900;font-size:1.1rem;padding:18px;cursor:pointer}
+.right{flex:1;display:flex;flex-direction:column}
+#map{height:300px;border-bottom:1px solid #30363D}
+#info{padding:10px;font-weight:900;background:#0D1117;border-bottom:1px solid #30363D}
+#stops{flex:1;overflow:auto;padding:10px}
+.stop{padding:8px;border-bottom:1px solid #30363D}
+.stop.active{background:rgba(31,111,235,0.25)}
+
+#kpiMini{font-size:.9rem;color:#58A6FF}
+#kpiSpark{width:120px;height:26px;background:rgba(255,255,255,.05);border-radius:6px}
+
+/* ===== OVERLAY ===== */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;z-index:99999}
+#panel{width:92%;height:92%;margin:auto;background:#0D1117;border-radius:16px;border:2px solid #1F6FEB;display:flex;flex-direction:column}
+#panel header{padding:14px;font-weight:900;background:#161B22;display:flex;justify-content:space-between}
+#panel nav{display:flex;gap:8px;padding:10px}
+#panel nav button{padding:8px 14px;border-radius:10px;border:none;font-weight:900;background:#1F6FEB}
+.tab{display:none;flex:1;overflow:auto;padding:14px}
+.tab.active{display:block}
+
+canvas{max-width:100%}
 </style>
 </head>
 
 <body>
+
 <div class="header">
-  <div class="left">
-    <div id="line"></div>
-    <div id="ziel"></div>
+  <div>
+    <div id="line">IVU Fahrer</div>
+    <div id="kpiMini">
+      <span id="kpiKm">0.0 km</span> ·
+      <span id="kpiStops">0 Stops</span>
+    </div>
   </div>
-  <div class="info">
-    <div id="time"></div>
-    <div id="heartbeat"></div>
+  <canvas id="kpiSpark"></canvas>
+  <div id="statusBox">--</div>
+</div>
+
+<div id="simBanner">🧪 SIMULATIONSMODUS AKTIV</div>
+
+<div class="main">
+  <div class="buttons">
+    <button class="btn" onclick="gpsStart()">📍 GPS</button>
+    <button class="btn" onclick="simStart()">🧪 SIM</button>
+    <button class="btn" onclick="prev()">◀</button>
+    <button class="btn" onclick="next()">▶</button>
+    <button class="btn" onclick="openOverlay()">🔧</button>
+  </div>
+  <div class="right">
+    <div id="map"></div>
+    <div id="info">Nächster Halt: <span id="nextName">–</span></div>
+    <div id="stops"></div>
   </div>
 </div>
 
-<div class="buttons">
-  <button onclick="prev()">◀ Zurück</button>
-  <button onclick="next()">Weiter ▶</button>
-  <button onclick="playCurrent()">🔊 Ansage Halt</button>
-  <button onclick="playSonder()">📣 Sonderansage</button>
-</div>
+<!-- ===== WERKSTATT OVERLAY ===== -->
+<div id="overlay">
+  <div id="panel">
+    <header>
+      <div>🔧 Werkstatt</div>
+      <button onclick="closeOverlay()">✖</button>
+    </header>
+    <nav>
+      <button onclick="openTab('kpi')">KPI</button>
+      <button onclick="openTab('sim')">Simulation</button>
+    </nav>
 
-<audio id="audio"></audio>
+    <div id="tab-kpi" class="tab">
+      <h3>KPI Grafiken</h3>
+      <canvas id="chartKm" height="120"></canvas>
+      <canvas id="chartStops" height="120"></canvas>
+    </div>
+
+    <div id="tab-sim" class="tab">
+      <h3>Simulation</h3>
+      <button onclick="simStart()">▶ Start</button>
+      <button onclick="simStop()">⏹ Stop</button>
+    </div>
+  </div>
+</div>
 
 <script>
-/* ================= FESTE FAHRTDATEN (LOKAL) ================= */
-const FAHRT = {
-  linie: "Linie 1",
-  ziel: "Hauptbahnhof",
-  haltestellen: ["Depot","Marktplatz","Rathaus","Hauptbahnhof"]
-};
+/* ===== DEMO-DATEN ===== */
+let trips=[{linie:"Linie 1",stops:[
+ {name:"Depot",lat:52.52,lon:13.40},
+ {name:"Markt",lat:52.521,lon:13.405},
+ {name:"Bahnhof",lat:52.522,lon:13.41}
+]}];
+let tripIndex=0,stopIndex=0;
 
-/* ================= STATE ================= */
-let idx = 0;
-const ansagen = JSON.parse(localStorage.getItem("ansagen")) || { haltestellen:{} };
-const sonder = JSON.parse(localStorage.getItem("sonderansagen")) || {};
+/* ===== MAP ===== */
+let map=L.map("map").setView([52.52,13.4],15);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+let marker=L.circleMarker([52.52,13.4],{radius:8,color:"#1F6FEB"}).addTo(map);
 
-/* ================= UI ================= */
-line.textContent = FAHRT.linie;
-ziel.textContent = "Ziel: " + FAHRT.ziel;
+/* ===== KPI ===== */
+let kpi={km:0,stops:0,last:null,series:[]};
+function kpiTick(){
+  if(!currentPos)return;
+  if(kpi.last){
+    const d=haversine(currentPos,kpi.last);
+    if(d<200)kpi.km+=d/1000;
+  }
+  kpi.last={...currentPos};
+  kpi.series.push(kpi.km);
+  if(kpi.series.length>30)kpi.series.shift();
+  renderKpi();
+}
+setInterval(kpiTick,1000);
 
-/* ================= AUDIO ================= */
-function playCurrent(){
-  const name = FAHRT.haltestellen[idx];
-  if(ansagen.haltestellen[name]){
-    audio.src = ansagen.haltestellen[name].data;
-    audio.play();
-  } else alert("Keine Ansage vorhanden");
+/* ===== RENDER ===== */
+function renderStops(){
+  stops.innerHTML="";
+  trips[tripIndex].stops.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="stop"+(i===stopIndex?" active":"");
+    d.textContent=(i+1)+". "+s.name;
+    stops.appendChild(d);
+  });
+  nextName.textContent=trips[tripIndex].stops[stopIndex].name;
+}
+renderStops();
+
+function renderKpi(){
+  kpiKm.textContent=kpi.km.toFixed(1)+" km";
+  kpiStops.textContent=kpi.stops+" Stops";
+  drawSpark();
 }
 
-function playSonder(){
-  const keys = Object.keys(sonder);
-  if(keys.length){
-    audio.src = sonder[keys[0]].data;
-    audio.play();
-  }
+/* ===== SPARKLINE ===== */
+function drawSpark(){
+  const c=kpiSpark,ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  if(kpi.series.length<2)return;
+  const min=Math.min(...kpi.series),max=Math.max(...kpi.series)||1;
+  ctx.strokeStyle="#58A6FF";ctx.beginPath();
+  kpi.series.forEach((v,i)=>{
+    const x=i*(c.width/(kpi.series.length-1));
+    const y=c.height-((v-min)/(max-min||1))*c.height;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.stroke();
 }
 
-function next(){ if(idx < FAHRT.haltestellen.length-1) idx++; }
-function prev(){ if(idx > 0) idx--; }
+/* ===== GPS / SIM ===== */
+let currentPos=null,sim=false,simTimer=null;
+function gpsStart(){
+  simStop();
+  navigator.geolocation.watchPosition(p=>{
+    currentPos={lat:p.coords.latitude,lon:p.coords.longitude};
+    marker.setLatLng([currentPos.lat,currentPos.lon]);
+  });
+}
+function simStart(){
+  sim=true;
+  simBanner.style.display="flex";
+  let i=0;
+  simTimer=setInterval(()=>{
+    const s=trips[0].stops[Math.min(i,trips[0].stops.length-1)];
+    currentPos={lat:s.lat,lon:s.lon};
+    marker.setLatLng([s.lat,s.lon]);
+    i++;
+  },2000);
+}
+function simStop(){
+  sim=false;
+  clearInterval(simTimer);
+  simBanner.style.display="none";
+}
 
-/* ================= HEARTBEAT + WATCHDOG ================= */
-let lastBeat = Date.now();
-setInterval(()=>{
-  lastBeat = Date.now();
-  heartbeat.style.background="#00ff88";
-  time.textContent=new Date().toLocaleTimeString();
-},1000);
-
-setInterval(()=>{
-  if(Date.now()-lastBeat>15000){
-    location.reload();
+/* ===== AUTO STOP ===== */
+function next(){
+  if(stopIndex<trips[0].stops.length-1){
+    stopIndex++;kpi.stops++;renderStops();
   }
-},3000);
+}
+function prev(){
+  if(stopIndex>0){stopIndex--;renderStops();}
+}
+
+/* ===== OVERLAY ===== */
+function openOverlay(){overlay.style.display="flex";openTab('kpi')}
+function closeOverlay(){overlay.style.display="none"}
+function openTab(n){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+n).classList.add("active");
+}
+
+/* ===== UTIL ===== */
+function haversine(a,b){
+  const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
 </script>
+
 </body>
 </html>
-``
